@@ -1,1 +1,1 @@
-find ./* -size +100M | cat >> .gitignore
+./creat_mat_file_for_python/*.mat
