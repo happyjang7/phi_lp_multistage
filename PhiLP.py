@@ -498,14 +498,6 @@ class set(object):
             self.zLowerUpdated = False
 
 
-    def UpdateTolerances(self):
-        if self.zLower > -np.inf:
-            self.currentObjectiveTolerance = (self.zUpper - self.zLower) / np.minimum(np.abs(self.zUpper),
-                                                                                      np.abs(self.zLower))
-        else:
-            self.currentObjectiveTolerance = -np.inf
-        self.currentProbabilityTolerance = np.abs(1 - np.sum(self.pWorst))
-
     def WriteProgress(self):
         print("=" * 100)
         print(self.phi.divergence, ', rho = ', str(self.rho))
