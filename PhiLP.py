@@ -337,8 +337,8 @@ class set(object):
         if lambdaLocal == 0:
             lambdaZero = True
             lower = self.GetMasterl()
-            # self.candidateSolution.SetLambda(lower[self.LAMBDA])
-            self.candidateSolution.SetLambda(np.float64(1e-6))
+            self.candidateSolution.SetLambda(lower[self.LAMBDA])
+            # self.candidateSolution.SetLambda(np.float64(1e-6))
             lambdaLocal = self.candidateSolution.Lambda()
 
         s = self.candidateSolution.S()
@@ -407,18 +407,18 @@ class set(object):
         lambdaLocal = inSolution.Lambda()
         muLocal = inSolution.Mu()
 
-
-        if not lambdaLocal == 0:
-            rawTheta = muLocal + lambdaLocal * self.rho + lambdaLocal * self.phi.Conjugate(inSolution.S())
-        else:
-            tmp = inSolution.secondStageValues - muLocal
-            tmp1 = lambdaLocal * self.phi.Conjugate(inSolution.S())
-            for i in range(len(inSolution.secondStageValues - muLocal)):
-                if tmp[i]<=0:
-                    tmp1[i] = 0
-                else:
-                    tmp1[i] = np.inf
-            rawTheta = muLocal + lambdaLocal * self.rho + tmp1
+        rawTheta = muLocal + lambdaLocal * self.rho + lambdaLocal * self.phi.Conjugate(inSolution.S())
+        # if not lambdaLocal == 0:
+        #     rawTheta = muLocal + lambdaLocal * self.rho + lambdaLocal * self.phi.Conjugate(inSolution.S())
+        # else:
+        #     tmp = inSolution.secondStageValues - muLocal
+        #     tmp1 = lambdaLocal * self.phi.Conjugate(inSolution.S())
+        #     for i in range(len(inSolution.secondStageValues - muLocal)):
+        #         if tmp[i]<=0:
+        #             tmp1[i] = 0
+        #         else:
+        #             tmp1[i] = np.inf
+        #     rawTheta = muLocal + lambdaLocal * self.rho + tmp1
 
 
         rawTheta[np.where(self.numObsPerScen == 0)[0]] = 0
@@ -445,19 +445,22 @@ class set(object):
         SLocal = inSolution.S_True()
         q = self.numObsPerScen / self.numObsTotal
 
-        if not lambdaLocal == 0:
-            h_True = np.matmul(cLocal, xLocal) + np.sum(
-                q * (muLocal + rhoLocal * lambdaLocal + lambdaLocal * self.phi.Conjugate(SLocal)))
-        else:
-            tmp = inSolution.secondStageValues_true - muLocal
-            tmp1 = lambdaLocal * self.phi.Conjugate(inSolution.S_True())
-            for i in range(len(inSolution.secondStageValues - muLocal)):
-                if tmp[i] <= 0:
-                    tmp1[i] = 0
-                else:
-                    tmp1[i] = np.inf
-            h_True = np.matmul(cLocal, xLocal) + np.sum(
-                q * (muLocal + rhoLocal * lambdaLocal + tmp1  ))
+        h_True = np.matmul(cLocal, xLocal) + np.sum(
+            q * (muLocal + rhoLocal * lambdaLocal + lambdaLocal * self.phi.Conjugate(SLocal)))
+
+        # if not lambdaLocal == 0:
+        #     h_True = np.matmul(cLocal, xLocal) + np.sum(
+        #         q * (muLocal + rhoLocal * lambdaLocal + lambdaLocal * self.phi.Conjugate(SLocal)))
+        # else:
+        #     tmp = inSolution.secondStageValues_true - muLocal
+        #     tmp1 = lambdaLocal * self.phi.Conjugate(inSolution.S_True())
+        #     for i in range(len(inSolution.secondStageValues - muLocal)):
+        #         if tmp[i] <= 0:
+        #             tmp1[i] = 0
+        #         else:
+        #             tmp1[i] = np.inf
+        #     h_True = np.matmul(cLocal, xLocal) + np.sum(
+        #         q * (muLocal + rhoLocal * lambdaLocal + tmp1  ))
         return h_True
 
 
