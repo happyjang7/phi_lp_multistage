@@ -1,0 +1,17 @@
+Phi = mchi2
+alpha = 0.01
+
+Current Objective Tolerance = 3.2479745638564773e-07
+Current Probability Tolerance = 0.00020099691493102867
+Iteratoins = 15
+Time (seconds) = 83.85038399999996
+
+ObjectiveValue = 41861.532046033324
+Lower Bound = 41861.51844951861
+Upper Bound = 41861.532046033324
+
+X = [99.37886426  0.        ]
+Mu = 31683.186400050832
+Lambda = 55.45024263442974
+pWorst = [0.         0.         0.         0.04862108 0.         0.
+ 0.40086733 0.         0.31056788 0.23974272]

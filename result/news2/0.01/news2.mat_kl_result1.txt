@@ -1,0 +1,16 @@
+Phi = kl
+alpha = 0.01
+
+Current Objective Tolerance = 5.1239496081455676e-11
+Current Probability Tolerance = 0.003243082434043254
+Iteratoins = 15
+Time (seconds) = 1.7291809999999999
+
+ObjectiveValue = 39488.0781407876
+Lower Bound = 39488.07813876425
+Upper Bound = 39488.0781407876
+
+X = [99.37886426  0.        ]
+Mu = 29550.17509425259
+Lambda = 0.01
+pWorst = [0.         1.00324308]
