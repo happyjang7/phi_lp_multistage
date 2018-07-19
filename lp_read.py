@@ -9,7 +9,7 @@ from scipy.sparse import find
 if sys.platform == "darwin":
     sys.path.append("/Applications/CPLEX_Studio128/cplex/python/3.6/x86-64_osx")
 elif sys.platform == "win32":
-    sys.path.append("/Applications/CPLEX_Studio128/cplex/python/3.6/x86-64_osx")
+    sys.path.append("C:\Program Files\IBM\ILOG\CPLEX_Studio128\cplex\python\3.6\x64_win64")
 else:
     raise Exception('What is your platform?')
 
