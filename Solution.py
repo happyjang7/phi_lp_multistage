@@ -129,8 +129,13 @@ class set(object):
             self.muFeasible = np.all(self.S() < self.phiLimit + (~self.isObserved * 1.0) * tolerBound)
             # self.muFeasible = np.all((self.secondStageValues - self.mu) < self.lambda1*self.phiLimit + (~self.isObserved * 1.0) * tolerBound)
 
+
     def S(self):
         if self.lambda1 != 0:
+            # python gives numerical error, ex) (1e-6*(1-1e-3))/1e-6 != 1e-6*((1-1e-3)/1e-6)
+            if np.isfinite(self.phiLimit) and self.lambda1<=np.float64(1e-6) and self.MuFeasible() == False:
+                if np.max((self.secondStageValues - self.mu) / self.lambda1)>1:
+                    return ((self.secondStageValues - np.max(self.secondStageValues))/self.lambda1 + self.phiLimit*np.float64(1-1e-3))
             return (self.secondStageValues - self.mu) / self.lambda1
         else:
             relDiff = (self.secondStageValues - self.mu) / np.abs(self.mu)
@@ -152,6 +157,10 @@ class set(object):
 
     def S_True(self):
         if self.lambda1 != 0:
+            # python gives numerical error, ex) (1e-6*(1-1e-3))/1e-6 != 1e-6*((1-1e-3)/1e-6)
+            if np.isfinite(self.phiLimit) and self.lambda1<=np.float64(1e-6) and self.MuFeasibleTrue() == False:
+                if np.max((self.secondStageValues_true - self.mu) / self.lambda1)>1:
+                    return ((self.secondStageValues_true - np.max(self.secondStageValues_true))/self.lambda1 + self.phiLimit*np.float64(1-1e-3))
             return (self.secondStageValues_true - self.mu) / self.lambda1
         else:
             relDiff = (self.secondStageValues_true - self.mu) / np.abs(self.mu)

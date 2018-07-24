@@ -52,7 +52,7 @@ class set(object):
         self.numObsTotal = np.sum(self.numObsPerScen)
 
         if inRho < 0:
-            phi2deriv = np.float32(self.phi.SecondDerivativeAt1())
+            phi2deriv = np.float64(self.phi.SecondDerivativeAt1())
             if np.isfinite(phi2deriv) and phi2deriv > 0:
                 inRho = (phi2deriv / (2 * self.numObsTotal)) * chi2.ppf(0.95, self.lpModel.numScenarios - 1)
             else:
@@ -68,8 +68,8 @@ class set(object):
 
         self.optimizer = inOptimizer
 
-        self.objectiveTolerance = np.float32(1e-6)
-        self.probabilityTolerance = np.float32(5e-3)
+        self.objectiveTolerance = np.float64(1e-6)
+        self.probabilityTolerance = np.float64(5e-3)
 
         self.LAMBDA = self.lpModel_parent['obj'].size
         self.MU = self.LAMBDA + 1
