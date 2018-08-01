@@ -1,4 +1,10 @@
-function [first, second,third,fourth]=make_matrix_for_water_ongoing(lpfile,scenario, num2stage,num3stage,num4stage,seed, savefile)
+function [first, second,third,fourth]=make_matrix_for_water_large(lpfile,scenario, num2stage,num3stage,num4stage,seed, savefile)
+% matlab "save" needs "-V7.3" to save large variables
+% instead of "-V7.3", fourth stage variables are divided in to three
+% fourth1.mat = fourth.StagePeriods,fourth.obj
+% fourth2.mat = fourth.A, fourth.B
+% fourth3.mat = fourth.rhs, fourth.lb, fourth.ub
+
 
 gpcd_scen = 1;
 population_scen = 'wisp';
@@ -165,7 +171,25 @@ for i=1:num2stage
     end
 end
 numStages=4;
-save(savefile, 'first', 'second','third','fourth','numStages')
+save(savefile, 'first', 'second','third','numStages')
+
+tmp = fourth;
+clear fourth 
+fourth.StagePeriods=tmp.StagePeriods;
+fourth.obj=tmp.obj;
+save('fourth1.mat', 'fourth');
+
+clear fourth
+fourth.A=tmp.A;
+fourth.B=tmp.B;
+save('fourth2.mat', 'fourth');
+
+clear fourth
+fourth.rhs=tmp.rhs;
+fourth.lb=tmp.lb;
+fourth.ub=tmp.ub;
+save('fourth3.mat', 'fourth');
+
 
 
 
