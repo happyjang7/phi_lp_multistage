@@ -5,12 +5,12 @@ import os
 import scipy.io as sio
 
 
-def run(inputPHI, alpha, matlab_input_data, saveFileName, saveFigureName):
+def run(inputPHI, alpha, matlab_input_data,matlab_input_data1,matlab_input_data2,matlab_input_data3, saveFileName, saveFigureName):
     # read data from Matlab .mat file
     mat_data = sio.loadmat(os.getcwd() + "/mat_data/" + matlab_input_data)
-    fourth1 = sio.loadmat(os.getcwd() + "/mat_data/fourth1.mat")
-    fourth2 = sio.loadmat(os.getcwd() + "/mat_data/fourth2.mat")
-    fourth3 = sio.loadmat(os.getcwd() + "/mat_data/fourth3.mat")
+    fourth1 = sio.loadmat(os.getcwd() + "/mat_data/"+ matlab_input_data1)
+    fourth2 = sio.loadmat(os.getcwd() + "/mat_data/"+ matlab_input_data2)
+    fourth3 = sio.loadmat(os.getcwd() + "/mat_data/"+ matlab_input_data3)
     # set lp data
     lp = lp_read_large_fourth_stage.set(mat_data,fourth1,fourth2,fourth3)
     start = time.clock()
@@ -154,4 +154,4 @@ def run(inputPHI, alpha, matlab_input_data, saveFileName, saveFigureName):
 
 
 if __name__ == "__main__":
-    run('burg', 0.1, "water30.mat", './result/test1.txt', './result/test1.png')
+    run('burg', 0.1, "new10.mat", './result/test1.txt', './result/test1.png')

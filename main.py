@@ -152,4 +152,4 @@ def run(inputPHI, alpha, matlab_input_data, saveFileName, saveFigureName):
 
 
 if __name__ == "__main__":
-    run('burg', 0.1, "water10.mat", './result/test1.txt', './result/test1.png')
+    run('burg', 0.1, "news10.mat", './result/test2.txt', './result/test2.png')

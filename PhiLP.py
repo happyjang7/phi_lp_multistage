@@ -49,7 +49,7 @@ class set(object):
         self.lpModel_children = inLPModel[1]
         self.phi = inPhi
         self.numObsPerScen = np.array(inNumObsPerScen)
-        self.numObsTotal = np.sum(self.numObsPerScen)
+        self.numObsTotal = self.lpModel_parent['numScenarios']
 
         if inRho < 0:
             phi2deriv = np.float64(self.phi.SecondDerivativeAt1())
@@ -131,22 +131,15 @@ class set(object):
         elif not type == '1-2stage':
             BMaster = self.GetMasterB()
 
-        CutMatrix = np.vstack((self.objectiveCutsMatrix, self.feasibilityCutsMatrix))
-        rows, cols = CutMatrix.nonzero()
-        idx = list(zip(rows, cols))
-        CutMatrix_coefficients = [(int(rows[i] + bMaster.size), int(cols[i]), CutMatrix[idx[i]]) for i in range(len(idx))]
-        CutMatrixRHS = np.hstack((self.objectiveCutsRHS, self.feasibilityCutsRHS))
-        CutSense = ["L"] * CutMatrixRHS.size
-
         try:
             mdl_master = cplex.Cplex()
             mdl_master.set_problem_name("mdl_master")
             mdl_master.parameters.lpmethod.set(mdl_master.parameters.lpmethod.values.auto)
             mdl_master.objective.set_sense(mdl_master.objective.sense.minimize)
             mdl_master.variables.add(obj=cMaster, lb=lMaster, ub=uMaster)
-            mdl_master.linear_constraints.add(senses=senseMaster + CutSense,
-                                              rhs=np.hstack((bMaster + BMaster * x_parent, CutMatrixRHS)))
-            mdl_master.linear_constraints.set_coefficients(list(AMaster) + CutMatrix_coefficients)
+            mdl_master.linear_constraints.add(senses=senseMaster,
+                                              rhs=bMaster + BMaster * x_parent)
+            mdl_master.linear_constraints.set_coefficients(list(AMaster))
             mdl_master.set_results_stream(None)
             mdl_master.solve()
             mdl_master.register_callback(MyCallback)
@@ -577,7 +570,7 @@ class set(object):
         lOut = np.append(self.lpModel_parent['lb'], np.zeros(2 + self.THETA.size))
         lOut[self.LAMBDA] = self.lambdaLowerBound
         lOut[self.MU] = -cplex.infinity
-        lOut[self.THETA] = -cplex.infinity
+        lOut[self.THETA] = 0
         return lOut
 
     def GetMasteru(self):
