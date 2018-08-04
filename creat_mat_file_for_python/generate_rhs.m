@@ -19,8 +19,12 @@ for PopNum = 1:2
     for AllotNum = 1:4
         Water_allocation_scen = water_allocation_header{AllotNum}; % 1,2,3
         
-        Supply = repmat(water_allocation(contains(water_allocation_header, Water_allocation_scen)),StagePeriods(Current_stage),1);
-        rhs(:,contains(rhs_header,'CAP')) = -Supply;
+        
+        RESIN_total_idx  = find(contains(eval(strcat('Population.',Population_scen,'.',Population_scen,'_header')),'Total'));
+        RESIN_total      = eval(strcat(     'Population.',Population_scen,'.', Population_scen,'(sum(StagePeriods(1:',num2str(Current_stage),'-1))+1:sum(StagePeriods(1:',num2str(Current_stage),')),',num2str(RESIN_total_idx),')'  ));
+        Tucson = Population.Tucson.Tucson(sum(StagePeriods(1:Current_stage-1))+1:sum(StagePeriods(1:Current_stage)),2);        
+        CAP = repmat(water_allocation(contains(water_allocation_header, Water_allocation_scen)),StagePeriods(Current_stage),1);
+        rhs(:,contains(rhs_header,'CAP')) = -CAP.*(RESIN_total./Tucson);
         
         GPCD_idx = find(contains(GPCD_header,GPCD_scen));
         GPCD_pred = 0.00112*GPCD(sum(StagePeriods(1:Current_stage-1))+1:sum(StagePeriods(1:Current_stage)),GPCD_idx);
