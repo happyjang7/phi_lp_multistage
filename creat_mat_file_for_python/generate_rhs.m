@@ -374,7 +374,7 @@ end
 for i= 1:8
     for j=1:8
         for k=1:8
-            fourth_rhs{i,j,k} = third_tmp{1,k};
+            fourth_rhs{i,j,k} = fourth_tmp{1,k};
         end
     end
 end
