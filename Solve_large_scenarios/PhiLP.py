@@ -17,7 +17,7 @@ import warnings, copy
 import cplex
 from cplex.exceptions import CplexError
 from cplex.callbacks import SimplexCallback
-import lp_read, PhiDivergence, Solution
+import lp_read_large_fourth_stage, PhiDivergence, Solution
 import copy
 
 if sys.platform == "darwin":
