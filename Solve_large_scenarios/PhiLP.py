@@ -571,7 +571,7 @@ class set(object):
         lOut = np.append(self.lpModel_parent['lb'], np.zeros(2 + self.THETA.size))
         lOut[self.LAMBDA] = self.lambdaLowerBound
         lOut[self.MU] = -cplex.infinity
-        lOut[self.THETA] = -np.float(10**15)
+        lOut[self.THETA] = -np.float(10**17)
         return lOut
 
     def GetMasteru(self):
