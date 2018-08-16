@@ -103,13 +103,12 @@ class set(object):
 if __name__ == "__main__":
     # test
     try:
-        mat_data = sio.loadmat(os.getcwd() + "/mat_data/water30.mat")
+        mat_data = sio.loadmat(os.getcwd() + "/mat_data/first_second_third.mat")
 
 
         fourth1 = sio.loadmat(os.getcwd() + "/mat_data/fourth1.mat")
         fourth2 = sio.loadmat(os.getcwd() + "/mat_data/fourth2.mat")
         fourth3 = sio.loadmat(os.getcwd() + "/mat_data/fourth3.mat")
-
 
         lp = set(mat_data,fourth1,fourth2,fourth3)
         mdl = cplex.Cplex()

@@ -128,6 +128,7 @@ for PopNum = 1:2
     end
 end
 
+clear rhs
 load('empty_rhs.mat')
 Current_stage = 3;
 rhs = repmat(rhs,StagePeriods(Current_stage),1);
@@ -237,23 +238,23 @@ for PopNum = 1:2
         
         tmp = rhs';
         if PopNum == 1
-            third_tmp{1,AllotNum} = tmp(:)';
+            third_tmp{AllotNum,1} = tmp(:)';
         elseif PopNum == 2
-            third_tmp{1,4+AllotNum} = tmp(:)';
+            third_tmp{4+AllotNum,1} = tmp(:)';
         end
     end
 end
 
 for i= 1:8
     for j=1:8
-        third_rhs{i,j} = third_tmp{1,j};
+        third_rhs{i,j} = third_tmp{j};
     end
 end
 
 
 
 
-
+clear rhs
 load('empty_rhs.mat')
 Current_stage = 4;
 rhs = repmat(rhs,StagePeriods(Current_stage),1);
@@ -363,9 +364,9 @@ for PopNum = 1:2
         
         tmp = rhs';
         if PopNum == 1
-            fourth_tmp{1,AllotNum} = tmp(:)';
+            fourth_tmp{AllotNum,1} = tmp(:)';
         elseif PopNum == 2
-            fourth_tmp{1,4+AllotNum} = tmp(:)';
+            fourth_tmp{4+AllotNum,1} = tmp(:)';
         end
     end
 end
@@ -374,7 +375,7 @@ end
 for i= 1:8
     for j=1:8
         for k=1:8
-            fourth_rhs{i,j,k} = fourth_tmp{1,k};
+            fourth_rhs{i,j,k} = fourth_tmp{k};
         end
     end
 end

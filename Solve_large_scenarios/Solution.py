@@ -1,9 +1,15 @@
 from __future__ import print_function
 import numpy as np
 import sys, os
-sys.path.append("/Applications/CPLEX_Studio128/cplex/python/3.6/x86-64_osx")
+if sys.platform == "darwin":
+    sys.path.append("/Applications/CPLEX_Studio128/cplex/python/3.6/x86-64_osx")
+elif sys.platform == "win32":
+    sys.path.append("C:\Program Files\IBM\ILOG\CPLEX_Studio128\cplex\python\3.6\x64_win64")
+else:
+    raise Exception('What is your platform?')
+
 import cplex
-import lp_read_large_fourth_stage, PhiDivergence
+import lp_reader, PhiDivergence
 import scipy.io as sio
 from scipy.sparse import csr_matrix, find, coo_matrix, hstack, vstack
 
@@ -153,7 +159,6 @@ class set(object):
         if np.all(self.secondStageValues_true > -cplex.infinity):
             tolerBound = np.float64(1e-6) * np.maximum(self.phiLimit, 1)
             self.muFeasible_true = np.all(self.S_True() < self.phiLimit + (~self.isObserved * 1.0) * tolerBound)
-            # self.muFeasible_true = np.all((self.secondStageValues_true - self.mu) < self.lambda1*self.phiLimit + (~self.isObserved * 1.0) * tolerBound)
 
     def S_True(self):
         if self.lambda1 != 0:

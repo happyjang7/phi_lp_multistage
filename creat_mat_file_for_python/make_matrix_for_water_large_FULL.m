@@ -23,7 +23,7 @@ num_var = length(lp.c)/StagePeriods(1);num_row = length(lp.b)/StagePeriods(1);
 tmp.c=lp.Getq(1);
 tmp.A=lp.GetD(1);
 tmp.B=lp.GetB(1);
-tmp.b=lp.Getd(1);
+% tmp.b=lp.Getd(1);
 tmp.l=lp.Getl2(1);
 tmp.u=lp.Getu2(1);
 
@@ -89,7 +89,6 @@ for i=1:num2stage
     second.obj{i,1}=second_tmp.obj;
     second.A{i,1}=second_tmp.A;
     second.B{i,1}=second_tmp.B;
-%     second.rhs{i,1}=second_tmp.rhs;
     second.lb{i,1}=second_tmp.lb;
     second.ub{i,1}=second_tmp.ub;
     second.obs{i,1}=second_tmp.obs;
@@ -99,7 +98,6 @@ for i=1:num2stage
         third.obj{i,j}=third_tmp.obj;
         third.A{i,j}=third_tmp.A;
         third.B{i,j}=third_tmp.B;
-%         third.rhs{i,j}=third_tmp.rhs;
         third.lb{i,j}=third_tmp.lb;
         third.ub{i,j}=third_tmp.ub;
         third.obs{i,j}=third_tmp.obs;
@@ -109,7 +107,6 @@ for i=1:num2stage
             fourth.obj{i,j,k}=fourth_tmp.obj;
             fourth.A{i,j,k}=fourth_tmp.A;
             fourth.B{i,j,k}=fourth_tmp.B;
-%             fourth.rhs{i,j,k}=fourth_tmp.rhs;
             fourth.lb{i,j,k}=fourth_tmp.lb;
             fourth.ub{i,j,k}=fourth_tmp.ub;
         end

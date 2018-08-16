@@ -1,0 +1,5 @@
+/creat_mat_file_for_python/*.mat
+/mat_data/*.mat
+/Solve_large_scenarios/mat_data/*.mat
+
+/.idea/*

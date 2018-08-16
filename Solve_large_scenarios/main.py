@@ -1,5 +1,5 @@
 import numpy as np
-import lp_read_large_fourth_stage, PhiDivergence, PhiLP
+import lp_reader, PhiDivergence, PhiLP
 import time
 import os
 import scipy.io as sio
@@ -12,7 +12,7 @@ def run(inputPHI, alpha, matlab_input_data,matlab_input_data1,matlab_input_data2
     fourth2 = sio.loadmat(os.getcwd() + "/mat_data/"+ matlab_input_data2)
     fourth3 = sio.loadmat(os.getcwd() + "/mat_data/"+ matlab_input_data3)
     # set lp data
-    lp = lp_read_large_fourth_stage.set(mat_data,fourth1,fourth2,fourth3)
+    lp = lp_reader.set(mat_data,fourth1,fourth2,fourth3)
     start = time.clock()
     # assumption: 1,2,3 stages have the same Phi-divergence
     inPhi = PhiDivergence.set(inputPHI)
@@ -36,11 +36,11 @@ def run(inputPHI, alpha, matlab_input_data,matlab_input_data1,matlab_input_data2
             philp2[i][j].SolveSubProblems()
             # Backward
             philp2[i][j].GenerateCuts()
-        philp1[i].SetChildrenStage_backward(philp2[i][:])
+        philp1[i].SetChildrenStage_backward(philp2[i])
         philp1[i].GenerateCuts()
-    philp.SetChildrenStage_backward(philp1[:])
+    philp.SetChildrenStage_backward(philp1)
     philp.GenerateCuts()
-    philp.UpdateBestSolution()
+    philp.UpdateSolutions(philp1, philp2)
     philp.UpdateTolerances()
 
     totalProblemsSolved = 1
@@ -63,61 +63,20 @@ def run(inputPHI, alpha, matlab_input_data,matlab_input_data1,matlab_input_data2
                 philp2[i][j].SolveSubProblems()
                 # SetChildrenStage_backward
                 philp2[i][j].GenerateCuts()
-            philp1[i].SetChildrenStage_backward(philp2[i][:])
+            philp1[i].SetChildrenStage_backward(philp2[i])
             philp1[i].GenerateCuts()
-        philp.SetChildrenStage_backward(philp1[:])
+        philp.SetChildrenStage_backward(philp1)
         philp.GenerateCuts()
         totalCutsMade = totalCutsMade + 1
-
-        # if ('cS' in locals() or 'cS' in globals()) and (np.array_equal(cS, philp.CandidateVector())):
-        #     print(' ')
-        #     print('Repeat Solution')
-        #     exitFlag = -100
-        #
-        # if exitFlag != 1 and exitFlag != -100:
-        #     print('exitFlag = ', str(exitFlag))
-        #     if exitFlag == 0:
-        #         philp.DoubleIterations()
-        #     elif exitFlag in [-2, -3, -4, -5]:
-        #         # Do nothing extra
-        #         pass
-        #     elif exitFlag == 5:
-        #         # exitFlag = 5 indicates, for CPLEX, that an optimal solution was found found, but with scaling issues.
-        #         # No additional actions will be taken.
-        #         pass
-        #     elif exitFlag == -50:
-        #         # The optimizer failed to find a solution better than philp.bestSolution. This has been observed with cplexlp.
-        #         pass
-        #     elif exitFlag == -100:
-        #         # The optimizer returned the same solution as it found the previous time around. This has been observed with cplexlp.
-        #         pass
-        #     elif exitFlag == 2:
-        #         # I don't know
-        #         pass
-        #     else:
-        #         raise Exception('Unknown error code: ' + str(exitFlag))
-        #     if philp.NumObjectiveCuts() > philp.THETA.size:
-        #         philp.DeleteOldestCut()
-        #     if philp.NumFeasibilityCuts() > 1:
-        #         philp.DeleteOldestFeasibilityCut()
-        #     print(str(philp.NumObjectiveCuts()), ' Objective Cuts Remaining, ', str(philp.NumFeasibilityCuts()),
-        #           ' Feasibility Cuts Remaining.')
-        #     # continue
-        # cS = philp.CandidateVector()
-        #
-        # if exitFlag == -100:
-        #     philp.ForceAcceptSolution()
         philp.UpdateSolutions(philp1, philp2)
-
         philp.UpdateTolerances()
         philp.WriteProgress()
 
         print('Total cuts made: ' + str(totalCutsMade))
         print('Total problems solved: ' + str(totalProblemsSolved))
         print('=' * 100)
-
-        upper = np.append(upper, philp.zUpper)
-        lower = np.append(lower, philp.zLower)
+        upper = np.append(upper, philp.zUpper / philp.objectiveScale)
+        lower = np.append(lower, philp.zLower / philp.objectiveScale)
 
     timeRuns = time.clock() - start
 
@@ -144,8 +103,8 @@ def run(inputPHI, alpha, matlab_input_data,matlab_input_data1,matlab_input_data2
         att_file.write("Time (seconds) = " + str(timeRuns) + '\n\n')
 
         att_file.write("ObjectiveValue = " + str(philp.ObjectiveValue()) + '\n')
-        att_file.write("Lower Bound = " + str(philp.zLower) + '\n')
-        att_file.write("Upper Bound = " + str(philp.zUpper) + '\n\n')
+        att_file.write("Lower Bound = " + str(philp.zLower / philp.objectiveScale) + '\n')
+        att_file.write("Upper Bound = " + str(philp.zUpper / philp.objectiveScale) + '\n\n')
 
         att_file.write("X = " + str(philp.bestSolution.X()) + '\n')
         att_file.write("Mu = " + str(philp.bestSolution.Mu()) + '\n')
