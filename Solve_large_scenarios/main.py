@@ -18,10 +18,10 @@ def run(inputPHI, alpha, matlab_input_data,matlab_input_data1,matlab_input_data2
     inPhi = PhiDivergence.set(inputPHI)
     # set: Phi-lp2
     philp = PhiLP.set([lp.first, lp.second], inPhi, lp.first['obs'], inPhi.Rho(alpha, lp.first['obs']))
-    philp1 = [PhiLP.set([lp.second[i], lp.third[i][:]],
+    philp1 = [PhiLP.set([lp.second[i], lp.third[i]],
                         inPhi, lp.second[i]['obs'], inPhi.Rho(alpha, lp.second[i]['obs']))
               for i in range(lp.first['numScenarios'])]
-    philp2 = [[PhiLP.set([lp.third[i][j], lp.fourth[i][j][:]],
+    philp2 = [[PhiLP.set([lp.third[i][j], lp.fourth[i][j]],
                          inPhi, lp.third[i][j]['obs'], inPhi.Rho(alpha, lp.third[i][j]['obs']))
                for j in range(lp.second[i]['numScenarios'])]
               for i in range(lp.first['numScenarios'])]

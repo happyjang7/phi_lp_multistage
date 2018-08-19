@@ -3,7 +3,7 @@
 import numpy as np
 from scipy.optimize import fsolve
 from scipy.stats import chi2
-
+import cplex
 class set(object):
     def __init__(self, inDivergence):
         lsts=["burg", "kl", "chi2", "mchi2", "hellinger"]
