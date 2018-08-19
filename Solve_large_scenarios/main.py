@@ -28,11 +28,11 @@ def run(inputPHI, alpha, matlab_input_data,matlab_input_data1,matlab_input_data2
 
     # InitializeBenders
     # Forward
-    philp.InitializeBenders(type='1-2stage', x_parent=0)
+    philp.InitializeBenders(type='1-2stage', type1='Initial',x_parent=0)
     for i in range(lp.first['numScenarios']):
-        philp1[i].InitializeBenders(type='2-3stage', x_parent=philp.candidateSolution.X())
+        philp1[i].InitializeBenders(type='2-3stage', type1='Initial',x_parent=philp.candidateSolution.X())
         for j in range(lp.second[i]['numScenarios']):
-            philp2[i][j].InitializeBenders(type='3-4stage', x_parent=philp1[i].candidateSolution.X())
+            philp2[i][j].InitializeBenders(type='3-4stage', type1='Initial',x_parent=philp1[i].candidateSolution.X())
             philp2[i][j].SolveSubProblems()
             # Backward
             philp2[i][j].GenerateCuts()
@@ -67,6 +67,7 @@ def run(inputPHI, alpha, matlab_input_data,matlab_input_data1,matlab_input_data2
             philp1[i].GenerateCuts()
         philp.SetChildrenStage_backward(philp1)
         philp.GenerateCuts()
+
         totalCutsMade = totalCutsMade + 1
         philp.UpdateSolutions(philp1, philp2)
         philp.UpdateTolerances()

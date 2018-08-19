@@ -14,7 +14,8 @@ import scipy.io as sio
 from scipy.sparse import csr_matrix, find, coo_matrix, hstack, vstack
 
 class set(object):
-    def __init__(self, inLPModel, inPhi, inNumObsPerScen, inCutType='multi'):
+    def __init__(self, inLPModel, inPhi, inNumObsPerScen, lambdaLower, inCutType='multi'):
+        self.lambdaLowerBound = lambdaLower
         self.lpModel = inLPModel
         self.lpModel_parent = inLPModel[0]
         self.lpModel_children = inLPModel[1]
@@ -68,10 +69,10 @@ class set(object):
 
 
     def SetFval(self, inFval):
-        self.fval = inFval
+        self.fval = np.float64(inFval)
 
     def SetPi(self, inPi):
-        self.pi = inPi
+        self.pi = np.float64(inPi)
 
     def Fval(self):
         return self.fval
@@ -84,19 +85,19 @@ class set(object):
     def SetX(self, inX):
         if np.array(inX).size != self.numVariables:
             raise Exception('X has size '+str(np.array(inX).size)+', should be '+str(self.numVariables))
-        self.solution = inX
+        self.solution = np.float64(inX)
 
     def SetLambda(self, inLambda):
         if np.array(inLambda).size != 1:
             raise Exception('Lambda has size '+str(np.array(inLambda).size)+', should be 1')
         elif inLambda < 0:
             raise Exception('Lambda must be non-negative')
-        self.lambda1 = inLambda
+        self.lambda1 = np.float64(inLambda)
 
     def SetMu(self, inMu):
         if np.array(inMu).size != 1:
             raise Exception('Mu has size '+str(np.array(inMu).size)+', should be 1')
-        self.mu = inMu
+        self.mu = np.float64(inMu)
 
     def SetTheta(self, inTheta, inType):
         if np.array(inTheta).size != self.theta[0].size:
@@ -107,22 +108,25 @@ class set(object):
             typeN = self.TRUE
         else:
             raise Exception('type must be ''master'' or ''true''')
-        self.theta[typeN] = inTheta
+        self.theta[typeN] = np.float64(inTheta)
 
     def SetSecondStageValue(self, inScen, inValue):
         if inScen < 0 or inScen > self.numScen-1:
             raise Exception('Scenario number must be between 0 and '+str(self.numScen-1))
-        self.secondStageValues[inScen] = inValue
+        self.secondStageValues[inScen] = np.float64(inValue)
 
         if np.all(self.secondStageValues > -cplex.infinity):
             if np.isfinite(self.phiLimit):
-                self.muFeasible = np.all(self.S() <= self.phiLimit)
+                self.muFeasible = np.all(self.secondStageValues-self.mu <= self.lambda1*self.phiLimit)
             else:
                 self.muFeasible = True
 
 
     def S(self):
-        if self.lambda1 != 0:
+        if self.lambda1 >  0:
+            if np.isfinite(self.phiLimit) and (np.amax(self.secondStageValues) - self.mu) / self.lambda1 >=self.phiLimit :
+                tmp_S2 = (self.secondStageValues -np.amax(self.secondStageValues)+ self.phiLimit * np.float64(1 - 1e-3) * self.lambda1) / self.lambda1
+                return tmp_S2
             return (self.secondStageValues - self.mu) / self.lambda1
         else:
             relDiff = (self.secondStageValues - self.mu) / np.abs(self.mu)
@@ -136,15 +140,18 @@ class set(object):
     def SetSecondStageValue_true(self, inScen, inValue):
         if inScen < 0 or inScen > self.numScen - 1:
             raise Exception('Scenario number must be between 0 and ' + str(self.numScen - 1))
-        self.secondStageValues_true[inScen] = inValue
+        self.secondStageValues_true[inScen] = np.float64(inValue)
         if np.all(self.secondStageValues_true > -cplex.infinity):
             if np.isfinite(self.phiLimit):
-                self.muFeasible_true = np.all(self.S_True() <= self.phiLimit)
+                self.muFeasible_true = np.all(self.secondStageValues_true-self.mu <= self.lambda1*self.phiLimit)
             else:
                 self.muFeasible_true = True
 
     def S_True(self):
-        if self.lambda1 != 0:
+        if self.lambda1 > 0:
+            if np.isfinite(self.phiLimit) and (np.amax(self.secondStageValues_true) - self.mu) / self.lambda1 >= self.phiLimit:
+                tmp_S2 = (self.secondStageValues_true -np.amax(self.secondStageValues_true)+ self.phiLimit * np.float64(1 - 1e-3) * self.lambda1) / self.lambda1
+                return tmp_S2
             return (self.secondStageValues_true - self.mu) / self.lambda1
         else:
             relDiff = (self.secondStageValues_true - self.mu) / np.abs(self.mu)
@@ -165,12 +172,12 @@ class set(object):
             type = self.INTERCEPT
         else:
             raise Exception('type must be ''slope'' or ''int''')
-        self.secondStageDuals[type][inScen] = inDual
+        self.secondStageDuals[type][inScen] = np.float64(inDual)
 
     def SetSecondStageSolution(self, inScen, inSol):
         if inScen < 0 or inScen > self.numScen-1:
             raise Exception('Scenario number must be between 0 and '+str(self.numScen-1))
-        self.secondStageSolutions[inScen] = inSol
+        self.secondStageSolutions[inScen] = np.float64(inSol)
 
     def X(self):
         return self.solution
