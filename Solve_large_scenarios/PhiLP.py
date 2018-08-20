@@ -123,6 +123,7 @@ class set(object):
 
         try:
             mdl_master = cplex.Cplex()
+            mdl_master.parameters.lpmethod.set(mdl_master.parameters.lpmethod.values.dual)
             mdl_master.variables.add(obj=cMaster, lb=lMaster, ub=uMaster)
             mdl_master.linear_constraints.add(senses=senseMaster + CutSense,
                                               rhs=np.hstack((bMaster + BMaster * x_parent, CutMatrixRHS)))
@@ -140,7 +141,8 @@ class set(object):
             if exitFlag != 1:
                 warnings.warn("Exited with flag " + str(exitFlag) + "'")
 
-        except CplexError as exc:            print(exc)
+        except CplexError as exc:
+            print(exc)
 
 
         self.candidateSolution.SetX(currentCandidate[range(currentCandidate.size - 2 - self.THETA.size)])
@@ -196,6 +198,7 @@ class set(object):
 
         try:
             mdl_sub = cplex.Cplex()
+            mdl_sub.parameters.lpmethod.set(mdl_sub.parameters.lpmethod.values.network)
             mdl_sub.variables.add(obj=q, lb=l, ub=u)
             mdl_sub.linear_constraints.add(senses=sense, rhs=d + B*xLocal)
             mdl_sub.linear_constraints.set_coefficients(D)
@@ -236,6 +239,7 @@ class set(object):
             lambdaZero = True
             lower = self.GetMasterl()
             self.candidateSolution.SetLambda(lower[self.LAMBDA])
+            # self.candidateSolution.SetLambda(np.float64(1e-6))
             lambdaLocal = self.candidateSolution.Lambda()
         s = self.candidateSolution.S()
         conjVals = self.phi.Conjugate(s)

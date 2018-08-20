@@ -1,5 +1,14 @@
 import main
 
+# for i in range(1,49):
+#     data = "first_second_third_"+str(i)+".mat"
+#     data1 = "fourth1_"+str(i)+".mat"
+#     data2 = "fourth2_"+str(i)+".mat"
+#     data3 = "fourth3_"+str(i)+".mat"
+#     phi = 'burg'
+#     main.run(phi,  0.1, data,data1,data2,data3, './result/result'+str(i)+'.txt', './result/result.png')
+
+
 data = "first_second_third.mat"
 data1 = "fourth1.mat"
 data2 = "fourth2.mat"
