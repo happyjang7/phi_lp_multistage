@@ -42,6 +42,7 @@ first.numScenarios = num2stage;
 %% Second_tmp
 second_tmp.StagePeriods=StagePeriods(2);
 second_tmp.obj=tmp.c(1:num_var*sum(StagePeriods(2:2)));
+second_tmp.obj(end-7:end-5)= -100;
 second_tmp.A=tmp.A(1:num_row*sum(StagePeriods(2:2)),1:num_var*sum(StagePeriods(2:2)));
 second_tmp.B=tmp.B(1:num_row*sum(StagePeriods(2:2)),1:num_var*sum(StagePeriods(1:1)));
 % second_tmp.rhs=tmp.b(1:num_row*sum(StagePeriods(2:2)));
@@ -53,6 +54,7 @@ second_tmp.numScenarios = num3stage;
 %% Third_tmp
 third_tmp.StagePeriods=StagePeriods(3);
 third_tmp.obj=tmp.c(num_var*sum(StagePeriods(2:2))+1:num_var*sum(StagePeriods(2:3)));
+third_tmp.obj(end-7:end-5)= -100;
 third_tmp.A=tmp.A(num_row*sum(StagePeriods(2:2))+1:num_row*sum(StagePeriods(2:3)),num_var*sum(StagePeriods(2:2))+1:num_var*sum(StagePeriods(2:3)));
 third_tmp.B=-tmp.A(num_row*sum(StagePeriods(2:2))+1:num_row*sum(StagePeriods(2:3)),1:num_var*sum(StagePeriods(2:2)));
 % third_tmp.rhs=tmp.b(num_row*sum(StagePeriods(2:2))+1:num_row*sum(StagePeriods(2:3)));

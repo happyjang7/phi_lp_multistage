@@ -96,12 +96,12 @@ class set(object):
             self.bestSolution = np.array([])
             self.secondBestSolution = np.array([])
 
-        exitFlag = self.SolveMasterProblem_forward(type, type1, x_parent)
+        exitFlag = self.SolveMasterProblem(type, type1, x_parent)
         if exitFlag != 1:
             raise Exception('Could not solve first stage LP')
 
 
-    def SolveMasterProblem_forward(self, type='1-2stage',type1='Not_Initial', x_parent=0):
+    def SolveMasterProblem(self, type='1-2stage',type1='Not_Initial', x_parent=0):
         self.ResetSecondStageSolutions()
         cMaster = self.GetMasterc()
         AMaster = self.GetMasterA()
@@ -123,7 +123,7 @@ class set(object):
 
         try:
             mdl_master = cplex.Cplex()
-            mdl_master.parameters.lpmethod.set(mdl_master.parameters.lpmethod.values.dual)
+            mdl_master.parameters.lpmethod.set(mdl_master.parameters.lpmethod.values.auto)
             mdl_master.variables.add(obj=cMaster, lb=lMaster, ub=uMaster)
             mdl_master.linear_constraints.add(senses=senseMaster + CutSense,
                                               rhs=np.hstack((bMaster + BMaster * x_parent, CutMatrixRHS)))
@@ -138,16 +138,28 @@ class set(object):
             fval = np.float64(solution.get_objective_value())
             pi = np.array(solution.get_dual_values())
 
+
+
             if exitFlag != 1:
-                warnings.warn("Exited with flag " + str(exitFlag) + "'")
+                print(type,type1)
+                print("Solution status = ", exitFlag, ":", end=' ')
+                # the following line prints the status as a string
+                print(mdl_master.solution.status[exitFlag])
+                if exitFlag == mdl_master.solution.status.unbounded:
+                    warnings.warn("Model is unbounded")
+                if exitFlag == mdl_master.solution.status.infeasible:
+                    warnings.warn("Model is infeasible")
+                if exitFlag == mdl_master.solution.status.infeasible_or_unbounded:
+                    warnings.warn("Model is infeasible or unbounded")
+
 
         except CplexError as exc:
             print(exc)
 
-
         self.candidateSolution.SetX(currentCandidate[range(currentCandidate.size - 2 - self.THETA.size)])
         self.candidateSolution.SetLambda(currentCandidate[self.LAMBDA])
         self.candidateSolution.SetMu(currentCandidate[self.MU])
+        self.candidateSolution.SetMu_true(currentCandidate[self.MU])
         self.candidateSolution.SetTheta(currentCandidate[self.THETA], 'master')
         self.candidateSolution.SetFval(fval)
         self.candidateSolution.SetPi(pi)
@@ -164,7 +176,7 @@ class set(object):
                 raise Exception('Actual objective drop = ' + str(np.matmul(cMaster, (currentBest - currentCandidate))))
         return exitFlag
 
-    def SetChildrenStage_backward(self, child_philp):
+    def SetChildrenStage(self, child_philp):
         self.candidateSolution.ResetSecondStages()
         for scenarioNum in range(self.lpModel_parent['numScenarios']):
             BMaster = child_philp[scenarioNum].GetMasterB()
@@ -193,12 +205,11 @@ class set(object):
         l = self.lpModel_children[inScenNumber]['lb']
         u = self.lpModel_children[inScenNumber]['ub']
         sense = self.lpModel_children[inScenNumber]['sense']
-
         xLocal = inSolution.X()
 
         try:
             mdl_sub = cplex.Cplex()
-            mdl_sub.parameters.lpmethod.set(mdl_sub.parameters.lpmethod.values.network)
+            mdl_sub.parameters.lpmethod.set(mdl_sub.parameters.lpmethod.values.auto)
             mdl_sub.variables.add(obj=q, lb=l, ub=u)
             mdl_sub.linear_constraints.add(senses=sense, rhs=d + B*xLocal)
             mdl_sub.linear_constraints.set_coefficients(D)
@@ -212,7 +223,16 @@ class set(object):
             pi = np.array(solution.get_dual_values())
 
             if exitFlag != 1:
+                print("Solution status = ", exitFlag, ":", end=' ')
+                # the following line prints the status as a string
+                print(mdl_sub.solution.status[exitFlag])
                 warnings.warn("'***Scenario '" + str(inScenNumber) + "' exited with flag '" + str(exitFlag) + "'")
+                if exitFlag == mdl_sub.solution.status.unbounded:
+                    warnings.warn("Model is unbounded")
+                if exitFlag == mdl_sub.solution.status.infeasible:
+                    warnings.warn("Model is infeasible")
+                if exitFlag == mdl_sub.solution.status.infeasible_or_unbounded:
+                    warnings.warn("Model is infeasible or unbounded")
 
         except CplexError as exc:
             print(exc)
@@ -287,7 +307,7 @@ class set(object):
         limit = np.minimum(self.phi.limit(), self.phi.computationLimit)
         localValues = self.candidateSolution.SecondStageValues_true()
         mu = np.float64(np.max(localValues) - limit * np.float64(1 - 1e-3) * lambdaLocal)
-        self.candidateSolution.SetMu(mu)
+        self.candidateSolution.SetMu_true(mu)
 
     # needed for upper bound
     def MuFeasible_for_upperbound(self):
@@ -323,7 +343,7 @@ class set(object):
         inSolution = self.candidateSolution
         cLocal = self.lpModel_parent['obj'] * self.objectiveScale
         xLocal = inSolution.X()
-        muLocal = inSolution.Mu()
+        muLocal = inSolution.Mu_true()
         lambdaLocal = inSolution.Lambda()
         rhoLocal = self.rho
         SLocal = inSolution.S_True()
@@ -367,6 +387,34 @@ class set(object):
         else:
             self.zLowerUpdated = False
 
+    def UpdateUpperBound(self, philp1, philp2):
+        for i in range(self.lpModel_parent['numScenarios']):
+            for j in range(philp1[i].lpModel_parent['numScenarios']):
+                for k in range(philp2[i][j].lpModel_parent['numScenarios']):
+                    fval_true = philp2[i][j].candidateSolution.secondStageValues[k]
+                    philp2[i][j].candidateSolution.SetSecondStageValue_true(k, fval_true)
+                philp2[i][j].MuFeasible_for_upperbound()
+                philp1[i].candidateSolution.SetSecondStageValue_true(j, philp2[i][j].Get_h_True())
+            philp1[i].MuFeasible_for_upperbound()
+            self.candidateSolution.SetSecondStageValue_true(i, philp1[i].Get_h_True())
+        self.MuFeasible_for_upperbound()
+
+
+        upper_candidate = self.Get_h_True()
+
+        if upper_candidate < self.zUpper:
+            self.newSolutionAccepted = True
+            self.UpdateBestSolution()
+            self.zUpper = upper_candidate
+
+    def UpdateLowerBound(self):
+        lower_candidate = self.candidateSolution.fval
+        if self.candidateSolution.MuFeasible():
+            self.zLowerUpdated = True
+            self.zLower = lower_candidate
+        else:
+            self.zLowerUpdated = False
+
 
     def WriteProgress(self):
         print("=" * 100)
@@ -397,7 +445,7 @@ class set(object):
 
     def CalculateProbability(self):
         q = self.numObsPerScen / self.numObsTotal
-        s = self.bestSolution.S()
+        s = self.bestSolution.S_True()
         self.pWorst = np.multiply(q, self.phi.ConjugateDerivative(s))
         self.pWorst[np.where(q == 0)[0]] = 0
         limitCases = np.abs(s - self.phi.limit()) <= np.float64(1e-6)

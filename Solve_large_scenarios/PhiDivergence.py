@@ -99,21 +99,22 @@ class set(object):
         return outDeriv
 
     def SetComputationLimit(self, inDistr, inRho):
-            assert(all(inDistr >= 0))
-            if not np.isinf(self.limit()):
-                return
-            distr = inDistr/np.sum(inDistr)
+        assert(all(inDistr >= 0))
+        if not np.isinf(self.limit()):
+            return
+        distr = inDistr/np.sum(inDistr)
 
-            def function_t(t, data):
-                return self.func(t)-data
-            data = inRho/np.min(distr[distr>0])
-            t = fsolve(function_t , 2, args=data)
+        def function_t(t, data):
+            return self.func(t)-data
+        data = inRho/np.min(distr[distr>0])
+        t = fsolve(function_t , 2, args=data)
 
-            def function_s(s,data):
-                return self.conjugateDerivative(s)-data
-            data1 = t
-            s = fsolve(function_s, 1, args=data1)
-            self.computationLimit = s
+        def function_s(s,data):
+            return self.conjugateDerivative(s)-data
+        data1 = t
+        s = fsolve(function_s, 1, args=data1)
+
+        self.computationLimit = s
 
     def Rho(self, alpha, obs):
         rho = self.SecondDerivativeAt1() / (2*np.sum(obs)) * chi2.ppf(1-alpha, obs.size - 1)

@@ -16,30 +16,34 @@ def run(inputPHI, alpha, matlab_input_data, saveFileName, saveFigureName):
     inPhi = PhiDivergence.set(inputPHI)
     # set: Phi-lp2
     philp = PhiLP.set([lp.first, lp.second], inPhi, lp.first['obs'], inPhi.Rho(alpha, lp.first['obs']))
-    philp1 = [PhiLP.set([lp.second[i], lp.third[i][:]],
+    philp1 = [PhiLP.set([lp.second[i], lp.third[i]],
                         inPhi, lp.second[i]['obs'], inPhi.Rho(alpha, lp.second[i]['obs']))
               for i in range(lp.first['numScenarios'])]
-    philp2 = [[PhiLP.set([lp.third[i][j], lp.fourth[i][j][:]],
+    philp2 = [[PhiLP.set([lp.third[i][j], lp.fourth[i][j]],
                          inPhi, lp.third[i][j]['obs'], inPhi.Rho(alpha, lp.third[i][j]['obs']))
                for j in range(lp.second[i]['numScenarios'])]
               for i in range(lp.first['numScenarios'])]
 
-    # InitializeBenders
-    # Forward
-    philp.InitializeBenders(type='1-2stage', x_parent=0)
+    # InitializeBenders: Forward
+    philp.InitializeBenders(type='1-2stage', type1='Initial', x_parent=0)
     for i in range(lp.first['numScenarios']):
-        philp1[i].InitializeBenders(type='2-3stage', x_parent=philp.candidateSolution.X())
+        philp1[i].InitializeBenders(type='2-3stage', type1='Initial', x_parent=philp.candidateSolution.X())
         for j in range(lp.second[i]['numScenarios']):
-            philp2[i][j].InitializeBenders(type='3-4stage', x_parent=philp1[i].candidateSolution.X())
+            philp2[i][j].InitializeBenders(type='3-4stage', type1='Initial', x_parent=philp1[i].candidateSolution.X())
             philp2[i][j].SolveSubProblems()
-            # Backward
-            philp2[i][j].GenerateCuts()
-        philp1[i].SetChildrenStage_backward(philp2[i][:])
-        philp1[i].GenerateCuts()
-    philp.SetChildrenStage_backward(philp1[:])
-    philp.GenerateCuts()
-    philp.UpdateBestSolution()
+
+    philp.UpdateSolutions(philp1, philp2)
     philp.UpdateTolerances()
+    #: Backward
+    for i in range(lp.first['numScenarios']):
+        for j in range(lp.second[i]['numScenarios']):
+            philp2[i][j].GenerateCuts()
+            philp2[i][j].SolveMasterProblem(type='3-4stage', x_parent=philp1[i].candidateSolution.X())
+        philp1[i].SetChildrenStage(philp2[i])
+        philp1[i].GenerateCuts()
+        philp1[i].SolveMasterProblem(type='2-3stage', x_parent=philp.candidateSolution.X())
+    philp.SetChildrenStage(philp1)
+    philp.GenerateCuts()
 
     totalProblemsSolved = 1
     totalCutsMade = 1
@@ -48,74 +52,39 @@ def run(inputPHI, alpha, matlab_input_data, saveFileName, saveFigureName):
 
     while not (philp.currentObjectiveTolerance <= philp.objectiveTolerance
                and philp.currentProbabilityTolerance <= philp.probabilityTolerance):
-        if totalProblemsSolved >= 100:
+        if totalProblemsSolved >= 1000:
             break
         totalProblemsSolved = totalProblemsSolved + 1
 
-        # SolveMasterProblem_forward
-        exitFlag = philp.SolveMasterProblem_forward(type='1-2stage', x_parent=0)
+        # SolveMasterProblem: Forward
+        philp.SolveMasterProblem(type='1-2stage', x_parent=0)
         for i in range(lp.first['numScenarios']):
-            philp1[i].SolveMasterProblem_forward(type='2-3stage', x_parent=philp.candidateSolution.X())
+            philp1[i].SolveMasterProblem(type='2-3stage', x_parent=philp.candidateSolution.X())
             for j in range(lp.second[i]['numScenarios']):
-                philp2[i][j].SolveMasterProblem_forward(type='3-4stage', x_parent=philp1[i].candidateSolution.X())
+                philp2[i][j].SolveMasterProblem(type='3-4stage', x_parent=philp1[i].candidateSolution.X())
                 philp2[i][j].SolveSubProblems()
-                # SetChildrenStage_backward
-                philp2[i][j].GenerateCuts()
-            philp1[i].SetChildrenStage_backward(philp2[i][:])
-            philp1[i].GenerateCuts()
-        philp.SetChildrenStage_backward(philp1[:])
-        philp.GenerateCuts()
-        totalCutsMade = totalCutsMade + 1
 
-        # if ('cS' in locals() or 'cS' in globals()) and (np.array_equal(cS, philp.CandidateVector())):
-        #     print(' ')
-        #     print('Repeat Solution')
-        #     exitFlag = -100
-        #
-        # if exitFlag != 1 and exitFlag != -100:
-        #     print('exitFlag = ', str(exitFlag))
-        #     if exitFlag == 0:
-        #         philp.DoubleIterations()
-        #     elif exitFlag in [-2, -3, -4, -5]:
-        #         # Do nothing extra
-        #         pass
-        #     elif exitFlag == 5:
-        #         # exitFlag = 5 indicates, for CPLEX, that an optimal solution was found found, but with scaling issues.
-        #         # No additional actions will be taken.
-        #         pass
-        #     elif exitFlag == -50:
-        #         # The optimizer failed to find a solution better than philp.bestSolution. This has been observed with cplexlp.
-        #         pass
-        #     elif exitFlag == -100:
-        #         # The optimizer returned the same solution as it found the previous time around. This has been observed with cplexlp.
-        #         pass
-        #     elif exitFlag == 2:
-        #         # I don't know
-        #         pass
-        #     else:
-        #         raise Exception('Unknown error code: ' + str(exitFlag))
-        #     if philp.NumObjectiveCuts() > philp.THETA.size:
-        #         philp.DeleteOldestCut()
-        #     if philp.NumFeasibilityCuts() > 1:
-        #         philp.DeleteOldestFeasibilityCut()
-        #     print(str(philp.NumObjectiveCuts()), ' Objective Cuts Remaining, ', str(philp.NumFeasibilityCuts()),
-        #           ' Feasibility Cuts Remaining.')
-        #     # continue
-        # cS = philp.CandidateVector()
-        #
-        # if exitFlag == -100:
-        #     philp.ForceAcceptSolution()
         philp.UpdateSolutions(philp1, philp2)
-
         philp.UpdateTolerances()
+        #: Backward
+        for i in range(lp.first['numScenarios']):
+            for j in range(lp.second[i]['numScenarios']):
+                philp2[i][j].GenerateCuts()
+                philp2[i][j].SolveMasterProblem(type='3-4stage', x_parent=philp1[i].candidateSolution.X())
+            philp1[i].SetChildrenStage(philp2[i])
+            philp1[i].GenerateCuts()
+            philp1[i].SolveMasterProblem(type='2-3stage', x_parent=philp.candidateSolution.X())
+        philp.SetChildrenStage(philp1)
+        philp.GenerateCuts()
+
+        totalCutsMade = totalCutsMade + 1
         philp.WriteProgress()
 
         print('Total cuts made: ' + str(totalCutsMade))
         print('Total problems solved: ' + str(totalProblemsSolved))
         print('=' * 100)
-
-        upper = np.append(upper, philp.zUpper)
-        lower = np.append(lower, philp.zLower)
+        upper = np.append(upper, philp.zUpper / philp.objectiveScale)
+        lower = np.append(lower, philp.zLower / philp.objectiveScale)
 
     timeRuns = time.clock() - start
 
@@ -142,8 +111,8 @@ def run(inputPHI, alpha, matlab_input_data, saveFileName, saveFigureName):
         att_file.write("Time (seconds) = " + str(timeRuns) + '\n\n')
 
         att_file.write("ObjectiveValue = " + str(philp.ObjectiveValue()) + '\n')
-        att_file.write("Lower Bound = " + str(philp.zLower) + '\n')
-        att_file.write("Upper Bound = " + str(philp.zUpper) + '\n\n')
+        att_file.write("Lower Bound = " + str(philp.zLower / philp.objectiveScale) + '\n')
+        att_file.write("Upper Bound = " + str(philp.zUpper / philp.objectiveScale) + '\n\n')
 
         att_file.write("X = " + str(philp.bestSolution.X()) + '\n')
         att_file.write("Mu = " + str(philp.bestSolution.Mu()) + '\n')
@@ -152,4 +121,4 @@ def run(inputPHI, alpha, matlab_input_data, saveFileName, saveFigureName):
 
 
 if __name__ == "__main__":
-    run('burg', 0.1, "news2.mat", './result/test2.txt', './result/test2.png')
+    run('burg', 0.1, "new10.mat", './result/test1.txt', './result/test1.png')

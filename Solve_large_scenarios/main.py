@@ -26,51 +26,55 @@ def run(inputPHI, alpha, matlab_input_data,matlab_input_data1,matlab_input_data2
                for j in range(lp.second[i]['numScenarios'])]
               for i in range(lp.first['numScenarios'])]
 
-    # InitializeBenders
-    # Forward
+    # InitializeBenders: Forward
     philp.InitializeBenders(type='1-2stage', type1='Initial',x_parent=0)
     for i in range(lp.first['numScenarios']):
         philp1[i].InitializeBenders(type='2-3stage', type1='Initial',x_parent=philp.candidateSolution.X())
         for j in range(lp.second[i]['numScenarios']):
             philp2[i][j].InitializeBenders(type='3-4stage', type1='Initial',x_parent=philp1[i].candidateSolution.X())
             philp2[i][j].SolveSubProblems()
-            # Backward
-            philp2[i][j].GenerateCuts()
-        philp1[i].SetChildrenStage_backward(philp2[i])
-        philp1[i].GenerateCuts()
-    philp.SetChildrenStage_backward(philp1)
-    philp.GenerateCuts()
+
+    philp.SetChildrenStage(philp1)
     philp.UpdateSolutions(philp1, philp2)
     philp.UpdateTolerances()
-
     totalProblemsSolved = 1
     totalCutsMade = 1
+    philp.WriteProgress()
+    print('Total cuts made: ' + str(totalCutsMade))
+    print('Total problems solved: ' + str(totalProblemsSolved))
+    print('=' * 100)
+
+    #: Backward
+    for i in range(lp.first['numScenarios']):
+        for j in range(lp.second[i]['numScenarios']):
+            philp2[i][j].GenerateCuts()
+            philp2[i][j].SolveMasterProblem(type='3-4stage', x_parent=philp1[i].candidateSolution.X())
+        philp1[i].SetChildrenStage(philp2[i])
+        philp1[i].GenerateCuts()
+        philp1[i].SolveMasterProblem(type='2-3stage', x_parent=philp.candidateSolution.X())
+
+    philp.SetChildrenStage(philp1)
+    philp.GenerateCuts()
+
     lower = np.array([])
     upper = np.array([])
-
     while not (philp.currentObjectiveTolerance <= philp.objectiveTolerance
                and philp.currentProbabilityTolerance <= philp.probabilityTolerance):
-        if totalProblemsSolved >= 100:
+        if totalProblemsSolved >= 1000:
             break
-        totalProblemsSolved = totalProblemsSolved + 1
-
-        # SolveMasterProblem_forward
-        exitFlag = philp.SolveMasterProblem_forward(type='1-2stage', x_parent=0)
+        # SolveMasterProblem: Forward
+        philp.SolveMasterProblem(type='1-2stage', x_parent=0)
         for i in range(lp.first['numScenarios']):
-            philp1[i].SolveMasterProblem_forward(type='2-3stage', x_parent=philp.candidateSolution.X())
+            philp1[i].SolveMasterProblem(type='2-3stage', x_parent=philp.candidateSolution.X())
             for j in range(lp.second[i]['numScenarios']):
-                philp2[i][j].SolveMasterProblem_forward(type='3-4stage', x_parent=philp1[i].candidateSolution.X())
+                philp2[i][j].SolveMasterProblem(type='3-4stage', x_parent=philp1[i].candidateSolution.X())
                 philp2[i][j].SolveSubProblems()
-                # SetChildrenStage_backward
-                philp2[i][j].GenerateCuts()
-            philp1[i].SetChildrenStage_backward(philp2[i])
-            philp1[i].GenerateCuts()
-        philp.SetChildrenStage_backward(philp1)
-        philp.GenerateCuts()
 
-        totalCutsMade = totalCutsMade + 1
+        philp.SetChildrenStage(philp1)
         philp.UpdateSolutions(philp1, philp2)
         philp.UpdateTolerances()
+        totalProblemsSolved = totalProblemsSolved + 1
+        totalCutsMade = totalCutsMade + 1
         philp.WriteProgress()
 
         print('Total cuts made: ' + str(totalCutsMade))
@@ -78,6 +82,20 @@ def run(inputPHI, alpha, matlab_input_data,matlab_input_data1,matlab_input_data2
         print('=' * 100)
         upper = np.append(upper, philp.zUpper / philp.objectiveScale)
         lower = np.append(lower, philp.zLower / philp.objectiveScale)
+
+        #: Backward
+        for i in range(lp.first['numScenarios']):
+            for j in range(lp.second[i]['numScenarios']):
+                philp2[i][j].GenerateCuts()
+                philp2[i][j].SolveMasterProblem(type='3-4stage', x_parent=philp1[i].candidateSolution.X())
+            philp1[i].SetChildrenStage(philp2[i])
+            philp1[i].GenerateCuts()
+            philp1[i].SolveMasterProblem(type='2-3stage', x_parent=philp.candidateSolution.X())
+
+        philp.SetChildrenStage(philp1)
+        philp.GenerateCuts()
+
+
 
     timeRuns = time.clock() - start
 
