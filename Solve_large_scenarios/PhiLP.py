@@ -77,7 +77,7 @@ class set(object):
 
         self.candidateSolution = Solution.set(self.lpModel, self.phi, self.numObsPerScen, self.lambdaLowerBound, inCutType='multi')
 
-    def InitializeBenders(self, type='1-2stage', type1='Initial', x_parent=0):
+    def InitializeBenders(self, type='stages', type1='Initial', x_parent=0):
         self.objectiveCutsMatrix = np.array([], dtype=np.float64).reshape(0, self.lpModel_parent['obj'].size + 2 + self.THETA.size)
         self.objectiveCutsRHS = np.array([])
         for i in range(self.THETA.size):
@@ -101,7 +101,7 @@ class set(object):
             raise Exception('Could not solve first stage LP')
 
 
-    def SolveMasterProblem(self, type='1-2stage',type1='Not_Initial', x_parent=0):
+    def SolveMasterProblem(self, type='stages',type1='non_Initial', x_parent=0):
         self.ResetSecondStageSolutions()
         cMaster = self.GetMasterc()
         AMaster = self.GetMasterA()
@@ -140,17 +140,18 @@ class set(object):
 
 
 
-            if exitFlag != 1:
-                print(type,type1)
-                print("Solution status = ", exitFlag, ":", end=' ')
-                # the following line prints the status as a string
+            if exitFlag == mdl_master.solution.status.unbounded:
+                print(type, type1)
                 print(mdl_master.solution.status[exitFlag])
-                if exitFlag == mdl_master.solution.status.unbounded:
-                    warnings.warn("Model is unbounded")
-                if exitFlag == mdl_master.solution.status.infeasible:
-                    warnings.warn("Model is infeasible")
-                if exitFlag == mdl_master.solution.status.infeasible_or_unbounded:
-                    warnings.warn("Model is infeasible or unbounded")
+                raise Exception("Model is unbounded")
+            if exitFlag == mdl_master.solution.status.infeasible:
+                print(type, type1)
+                print(mdl_master.solution.status[exitFlag])
+                raise Exception("Model is infeasible")
+            if exitFlag == mdl_master.solution.status.infeasible_or_unbounded:
+                print(type, type1)
+                print(mdl_master.solution.status[exitFlag])
+                raise Exception("Model is infeasible or unbounded")
 
 
         except CplexError as exc:
@@ -163,6 +164,11 @@ class set(object):
         self.candidateSolution.SetTheta(currentCandidate[self.THETA], 'master')
         self.candidateSolution.SetFval(fval)
         self.candidateSolution.SetPi(pi)
+
+        if type1=='Initial':
+            self.candidateSolution.SetLambda(np.float64(10**15))
+            self.candidateSolution.SetMu(np.float64(10**15))
+            self.candidateSolution.SetMu_true(np.float64(10**15))
 
         if type == '1-2stage' and type1 !='Initial':
             currentBest = self.GetDecisions(self.bestSolution)
@@ -222,17 +228,18 @@ class set(object):
             fval = np.float64(solution.get_objective_value())
             pi = np.array(solution.get_dual_values())
 
-            if exitFlag != 1:
-                print("Solution status = ", exitFlag, ":", end=' ')
-                # the following line prints the status as a string
+            if exitFlag == mdl_sub.solution.status.unbounded:
+                print("'***Scenario '" + str(inScenNumber) + "' exited with flag '" + str(exitFlag) + "'")
                 print(mdl_sub.solution.status[exitFlag])
-                warnings.warn("'***Scenario '" + str(inScenNumber) + "' exited with flag '" + str(exitFlag) + "'")
-                if exitFlag == mdl_sub.solution.status.unbounded:
-                    warnings.warn("Model is unbounded")
-                if exitFlag == mdl_sub.solution.status.infeasible:
-                    warnings.warn("Model is infeasible")
-                if exitFlag == mdl_sub.solution.status.infeasible_or_unbounded:
-                    warnings.warn("Model is infeasible or unbounded")
+                raise Exception("Model is unbounded")
+            if exitFlag == mdl_sub.solution.status.infeasible:
+                print("'***Scenario '" + str(inScenNumber) + "' exited with flag '" + str(exitFlag) + "'")
+                print(mdl_sub.solution.status[exitFlag])
+                raise Exception("Model is infeasible")
+            if exitFlag == mdl_sub.solution.status.infeasible_or_unbounded:
+                print("'***Scenario '" + str(inScenNumber) + "' exited with flag '" + str(exitFlag) + "'")
+                print(mdl_sub.solution.status[exitFlag])
+                raise Exception("Model is infeasible or unbounded")
 
         except CplexError as exc:
             print(exc)
@@ -360,19 +367,7 @@ class set(object):
             self.bestSolution = copy.copy(self.candidateSolution)
             self.CalculateProbability()
 
-    def UpdateSolutions(self, philp1, philp2):
-        for i in range(self.lpModel_parent['numScenarios']):
-            for j in range(philp1[i].lpModel_parent['numScenarios']):
-                for k in range(philp2[i][j].lpModel_parent['numScenarios']):
-                    fval_true = philp2[i][j].candidateSolution.secondStageValues[k]
-                    philp2[i][j].candidateSolution.SetSecondStageValue_true(k, fval_true)
-                philp2[i][j].MuFeasible_for_upperbound()
-                philp1[i].candidateSolution.SetSecondStageValue_true(j, philp2[i][j].Get_h_True())
-            philp1[i].MuFeasible_for_upperbound()
-            self.candidateSolution.SetSecondStageValue_true(i, philp1[i].Get_h_True())
-        self.MuFeasible_for_upperbound()
-
-
+    def UpdateSolutions(self):
         upper_candidate = self.Get_h_True()
         lower_candidate = self.candidateSolution.fval
 
@@ -386,41 +381,12 @@ class set(object):
             self.zLower = lower_candidate
         else:
             self.zLowerUpdated = False
-
-    def UpdateUpperBound(self, philp1, philp2):
-        for i in range(self.lpModel_parent['numScenarios']):
-            for j in range(philp1[i].lpModel_parent['numScenarios']):
-                for k in range(philp2[i][j].lpModel_parent['numScenarios']):
-                    fval_true = philp2[i][j].candidateSolution.secondStageValues[k]
-                    philp2[i][j].candidateSolution.SetSecondStageValue_true(k, fval_true)
-                philp2[i][j].MuFeasible_for_upperbound()
-                philp1[i].candidateSolution.SetSecondStageValue_true(j, philp2[i][j].Get_h_True())
-            philp1[i].MuFeasible_for_upperbound()
-            self.candidateSolution.SetSecondStageValue_true(i, philp1[i].Get_h_True())
-        self.MuFeasible_for_upperbound()
-
-
-        upper_candidate = self.Get_h_True()
-
-        if upper_candidate < self.zUpper:
-            self.newSolutionAccepted = True
-            self.UpdateBestSolution()
-            self.zUpper = upper_candidate
-
-    def UpdateLowerBound(self):
-        lower_candidate = self.candidateSolution.fval
-        if self.candidateSolution.MuFeasible():
-            self.zLowerUpdated = True
-            self.zLower = lower_candidate
-        else:
-            self.zLowerUpdated = False
-
 
     def WriteProgress(self):
         print("=" * 100)
         print(self.phi.divergence, ', rho = ', str(self.rho))
-        print('Observations: ', str(self.numObsPerScen))
-        print(str(self.NumObjectiveCuts()), ' objective cuts, ', str(self.NumFeasibilityCuts()), ' feasibility cuts.')
+        print('Observations per node on the 1st Stage: ', str(self.numObsPerScen))
+        print('1st Stage: ', str(self.NumObjectiveCuts()), ' objective cuts , ', str(self.NumFeasibilityCuts()), ' feasibility cuts.')
 
         if self.candidateSolution.MuFeasible():
             print('No feasibility cut generated')

@@ -29,13 +29,25 @@ def run(inputPHI, alpha, matlab_input_data,matlab_input_data1,matlab_input_data2
     # InitializeBenders: Forward
     philp.InitializeBenders(type='1-2stage', type1='Initial',x_parent=0)
     for i in range(lp.first['numScenarios']):
-        philp1[i].InitializeBenders(type='2-3stage', type1='Initial',x_parent=philp.candidateSolution.X())
+        philp1[i].InitializeBenders(type1='Initial',x_parent=philp.candidateSolution.X())
         for j in range(lp.second[i]['numScenarios']):
-            philp2[i][j].InitializeBenders(type='3-4stage', type1='Initial',x_parent=philp1[i].candidateSolution.X())
+            philp2[i][j].InitializeBenders(type1='Initial',x_parent=philp1[i].candidateSolution.X())
             philp2[i][j].SolveSubProblems()
 
     philp.SetChildrenStage(philp1)
-    philp.UpdateSolutions(philp1, philp2)
+    # calculate true for upperbound
+    for i in range(philp.lpModel_parent['numScenarios']):
+        for j in range(philp1[i].lpModel_parent['numScenarios']):
+            for k in range(philp2[i][j].lpModel_parent['numScenarios']):
+                fval_true = philp2[i][j].candidateSolution.secondStageValues[k]
+                philp2[i][j].candidateSolution.SetSecondStageValue_true(k, fval_true)
+            philp2[i][j].MuFeasible_for_upperbound()
+            philp1[i].candidateSolution.SetSecondStageValue_true(j, philp2[i][j].Get_h_True())
+        philp1[i].MuFeasible_for_upperbound()
+        philp.candidateSolution.SetSecondStageValue_true(i, philp1[i].Get_h_True())
+    philp.MuFeasible_for_upperbound()
+
+    philp.UpdateSolutions()
     philp.UpdateTolerances()
     totalProblemsSolved = 1
     totalCutsMade = 1
@@ -48,10 +60,10 @@ def run(inputPHI, alpha, matlab_input_data,matlab_input_data1,matlab_input_data2
     for i in range(lp.first['numScenarios']):
         for j in range(lp.second[i]['numScenarios']):
             philp2[i][j].GenerateCuts()
-            philp2[i][j].SolveMasterProblem(type='3-4stage', x_parent=philp1[i].candidateSolution.X())
+            philp2[i][j].SolveMasterProblem(x_parent=philp1[i].candidateSolution.X())
         philp1[i].SetChildrenStage(philp2[i])
         philp1[i].GenerateCuts()
-        philp1[i].SolveMasterProblem(type='2-3stage', x_parent=philp.candidateSolution.X())
+        philp1[i].SolveMasterProblem(x_parent=philp.candidateSolution.X())
 
     philp.SetChildrenStage(philp1)
     philp.GenerateCuts()
@@ -65,13 +77,25 @@ def run(inputPHI, alpha, matlab_input_data,matlab_input_data1,matlab_input_data2
         # SolveMasterProblem: Forward
         philp.SolveMasterProblem(type='1-2stage', x_parent=0)
         for i in range(lp.first['numScenarios']):
-            philp1[i].SolveMasterProblem(type='2-3stage', x_parent=philp.candidateSolution.X())
+            philp1[i].SolveMasterProblem(x_parent=philp.candidateSolution.X())
             for j in range(lp.second[i]['numScenarios']):
-                philp2[i][j].SolveMasterProblem(type='3-4stage', x_parent=philp1[i].candidateSolution.X())
+                philp2[i][j].SolveMasterProblem(x_parent=philp1[i].candidateSolution.X())
                 philp2[i][j].SolveSubProblems()
 
         philp.SetChildrenStage(philp1)
-        philp.UpdateSolutions(philp1, philp2)
+        # calculate true for upperbound
+        for i in range(philp.lpModel_parent['numScenarios']):
+            for j in range(philp1[i].lpModel_parent['numScenarios']):
+                for k in range(philp2[i][j].lpModel_parent['numScenarios']):
+                    fval_true = philp2[i][j].candidateSolution.secondStageValues[k]
+                    philp2[i][j].candidateSolution.SetSecondStageValue_true(k, fval_true)
+                philp2[i][j].MuFeasible_for_upperbound()
+                philp1[i].candidateSolution.SetSecondStageValue_true(j, philp2[i][j].Get_h_True())
+            philp1[i].MuFeasible_for_upperbound()
+            philp.candidateSolution.SetSecondStageValue_true(i, philp1[i].Get_h_True())
+        philp.MuFeasible_for_upperbound()
+
+        philp.UpdateSolutions()
         philp.UpdateTolerances()
         totalProblemsSolved = totalProblemsSolved + 1
         totalCutsMade = totalCutsMade + 1
@@ -87,10 +111,10 @@ def run(inputPHI, alpha, matlab_input_data,matlab_input_data1,matlab_input_data2
         for i in range(lp.first['numScenarios']):
             for j in range(lp.second[i]['numScenarios']):
                 philp2[i][j].GenerateCuts()
-                philp2[i][j].SolveMasterProblem(type='3-4stage', x_parent=philp1[i].candidateSolution.X())
+                philp2[i][j].SolveMasterProblem(x_parent=philp1[i].candidateSolution.X())
             philp1[i].SetChildrenStage(philp2[i])
             philp1[i].GenerateCuts()
-            philp1[i].SolveMasterProblem(type='2-3stage', x_parent=philp.candidateSolution.X())
+            philp1[i].SolveMasterProblem(x_parent=philp.candidateSolution.X())
 
         philp.SetChildrenStage(philp1)
         philp.GenerateCuts()

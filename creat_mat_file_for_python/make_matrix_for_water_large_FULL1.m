@@ -1,4 +1,4 @@
-function [first, second, third, fourth]=make_matrix_for_water_large_FULL(lpfile,savefile1,savefile2,savefile3,savefile4)
+function [first, second, third, fourth]=make_matrix_for_water_large_FULL1(lpfile,savefile1)
 % matlab "save" needs "-V7.3" to save large variables
 % instead of "-V7.3", fourth stage variables are divided in to three
 % fourth1.mat = fourth.StagePeriods,fourth.obj
@@ -120,27 +120,4 @@ third.rhs = third_rhs;
 fourth.rhs = fourth_rhs;
 
 numStages=4;
-save(savefile1, 'first', 'second','third','numStages')
-
-tmp1 = fourth;
-clear fourth 
-fourth.StagePeriods=tmp1.StagePeriods;
-fourth.obj=tmp1.obj;
-save(savefile2, 'fourth');
-
-clear fourth
-fourth.A=tmp1.A;
-fourth.B=tmp1.B;
-save(savefile3, 'fourth');
-
-clear fourth
-fourth.rhs=tmp1.rhs;
-fourth.lb=tmp1.lb;
-fourth.ub=tmp1.ub;
-save(savefile4, 'fourth');
-
-
-
-
-
-
+save(savefile1, 'first', 'second','third','fourth','numStages','-V7.3')
