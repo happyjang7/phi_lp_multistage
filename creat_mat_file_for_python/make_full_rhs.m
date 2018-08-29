@@ -1,7 +1,7 @@
 
-function [second_rhs, third_rhs, fourth_rhs] = make_full_rhs()
+function [second_rhs, third_rhs, fourth_rhs] = make_full_rhs(type)
 for GPCD=1:48
-[second_tmp{GPCD}, third_tmp{GPCD}, fourth_tmp{GPCD}] = generate_rhs(GPCD);
+[second_tmp{GPCD}, third_tmp{GPCD}, fourth_tmp{GPCD}] = generate_rhs(type,GPCD);
 end
 
 second_rhs = cell(0);

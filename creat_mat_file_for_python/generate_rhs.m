@@ -1,9 +1,19 @@
-function [second_rhs, third_rhs, fourth_rhs] = generate_rhs(GPCD_scen_num)
+function [second_rhs, third_rhs, fourth_rhs] = generate_rhs(type, GPCD_scen_num)
 % GPCD_scen_num = 1:48
 
 StagePeriods=[3,9,10,15];
 
-load('empty_rhs.mat')
+
+switch lower(type)
+    case 'ni'
+        load('empty_rhs_NI.mat')
+    case 'wwtp'
+        load('empty_rhs_WWTP.mat')
+    case 'ipr'
+        load('empty_rhs_IPR.mat')
+    otherwise
+        error('Type,Unknown')
+end
 load('projected_Population.mat')
 load('projected_GPCD.mat')
 load('water_allocation.mat')
@@ -129,7 +139,17 @@ for PopNum = 1:2
 end
 
 clear rhs
-load('empty_rhs.mat')
+
+switch lower(type)
+    case 'ni'
+        load('empty_rhs_NI.mat')
+    case 'wwtp'
+        load('empty_rhs_WWTP.mat')
+    case 'ipr'
+        load('empty_rhs_IPR.mat')
+    otherwise
+        error('Type,Unknown')
+end
 Current_stage = 3;
 rhs = repmat(rhs,StagePeriods(Current_stage),1);
 for PopNum = 1:2
@@ -255,7 +275,17 @@ end
 
 
 clear rhs
-load('empty_rhs.mat')
+
+switch lower(type)
+    case 'ni'
+        load('empty_rhs_NI.mat')
+    case 'wwtp'
+        load('empty_rhs_WWTP.mat')
+    case 'ipr'
+        load('empty_rhs_IPR.mat')
+    otherwise
+        error('Type,Unknown')
+end
 Current_stage = 4;
 rhs = repmat(rhs,StagePeriods(Current_stage),1);
 for PopNum = 1:2

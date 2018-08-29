@@ -1,4 +1,4 @@
-function [first, second, third, fourth]=make_matrix_for_water_large_FULL(lpfile,savefile1,savefile2,savefile3,savefile4)
+function [first, second, third, fourth]=make_matrix_for_water_large_FULL(type,lpfile,savefile1,savefile2,savefile3,savefile4)
 % matlab "save" needs "-V7.3" to save large variables
 % instead of "-V7.3", fourth stage variables are divided in to three
 % fourth1.mat = fourth.StagePeriods,fourth.obj
@@ -113,8 +113,39 @@ for i=1:num2stage
     end
 end
 
+
+switch lower(type)
+    case 'ni'
+        for i=1:num2stage
+            second.ub{i,1}(end-4)=0;
+            for j=1:num3stage
+                third.ub{i,j}(end-4)=0;
+            end
+        end
+    case 'wwtp'
+        for i=1:num2stage
+            second.ub{i,1}(end-6)=0;
+            for j=1:num3stage
+                third.ub{i,j}(end-6)=0;
+            end
+        end
+    case 'ipr'
+        for i=1:num2stage
+            second.ub{i,1}(end-6)=0;
+            for j=1:num3stage
+                third.ub{i,j}(end-6)=0;
+            end
+        end
+    otherwise
+        error('Type,Unknown')
+end
+
+
+
+
+
 %% Generate rhs
-[second_rhs, third_rhs, fourth_rhs] = make_full_rhs();
+[second_rhs, third_rhs, fourth_rhs] = make_full_rhs(type);
 second.rhs = second_rhs;
 third.rhs = third_rhs;
 fourth.rhs = fourth_rhs;
