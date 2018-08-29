@@ -1,6 +1,5 @@
-from __future__ import print_function
 import numpy as np
-import sys, os
+import sys
 if sys.platform == "darwin":
     sys.path.append("/Applications/CPLEX_Studio128/cplex/python/3.6/x86-64_osx")
 elif sys.platform == "win32":
@@ -9,16 +8,11 @@ else:
     raise Exception('What is your platform?')
 
 import cplex
-import lp_reader, PhiDivergence
-import scipy.io as sio
-from scipy.sparse import csr_matrix, find, coo_matrix, hstack, vstack
 
 class set(object):
     def __init__(self, inLPModel, inPhi, inNumObsPerScen, lambdaLower, inCutType='multi'):
         self.lambdaLowerBound = lambdaLower
         self.lpModel = inLPModel
-        self.lpModel_parent = inLPModel[0]
-        self.lpModel_children = inLPModel[1]
         self.phi = inPhi
         self.obs = inNumObsPerScen
         self.cutType = inCutType
@@ -29,8 +23,8 @@ class set(object):
         self.SLOPE = 0
         self.INTERCEPT = 1
 
-        self.numVariables =self.lpModel_parent['obj'].size
-        self.numScen =self.lpModel_parent['numScenarios']
+        self.numVariables =self.lpModel['obj'].size
+        self.numScen =self.lpModel['numScenarios']
         self.phiLimit = np.minimum(self.phi.limit(), self.phi.computationLimit)
         self.isObserved = self.obs > 0
 
@@ -44,13 +38,13 @@ class set(object):
         self.Reset()
 
     def Reset(self):
-        self.solution = np.zeros_like(self.lpModel_parent['obj'],dtype=float)
+        self.solution = np.zeros_like(self.lpModel['obj'],dtype=float)
         self.lambda1 =np.float64(0)
         self.mu = np.float64(0)
         self.mu_true = np.float64(0)
 
         self.fval = np.float64(0)
-        self.pi = np.zeros_like(self.lpModel_parent['rhs'],dtype=float)
+        self.pi = np.zeros_like(self.lpModel['rhs'],dtype=float)
         self.theta = [-cplex.infinity*np.ones(self.numTheta), -cplex.infinity*np.ones(self.numTheta)]
 
         self.secondStageValues = -cplex.infinity*np.ones(self.numScen)
@@ -73,7 +67,7 @@ class set(object):
         self.fval = np.float64(inFval)
 
     def SetPi(self, inPi):
-        self.pi = np.float64(inPi)
+        self.pi = np.array(inPi,dtype=float)
 
     def Fval(self):
         return self.fval
@@ -86,7 +80,7 @@ class set(object):
     def SetX(self, inX):
         if np.array(inX).size != self.numVariables:
             raise Exception('X has size '+str(np.array(inX).size)+', should be '+str(self.numVariables))
-        self.solution = np.float64(inX)
+        self.solution = np.array(inX,dtype=float)
 
     def SetLambda(self, inLambda):
         if np.array(inLambda).size != 1:
@@ -114,12 +108,12 @@ class set(object):
             typeN = self.TRUE
         else:
             raise Exception('type must be ''master'' or ''true''')
-        self.theta[typeN] = np.float64(inTheta)
+        self.theta[typeN] = np.array(inTheta,dtype=float)
 
     def SetSecondStageValue(self, inScen, inValue):
         if inScen < 0 or inScen > self.numScen-1:
             raise Exception('Scenario number must be between 0 and '+str(self.numScen-1))
-        self.secondStageValues[inScen] = np.float64(inValue)
+        self.secondStageValues[inScen] = np.array(inValue,dtype=float)
 
         if np.all(self.secondStageValues > -cplex.infinity):
             self.muFeasible = np.all((self.secondStageValues-self.mu)/self.lambda1 < self.phiLimit)
@@ -143,7 +137,7 @@ class set(object):
     def SetSecondStageValue_true(self, inScen, inValue):
         if inScen < 0 or inScen > self.numScen - 1:
             raise Exception('Scenario number must be between 0 and ' + str(self.numScen - 1))
-        self.secondStageValues_true[inScen] = np.float64(inValue)
+        self.secondStageValues_true[inScen] = np.array(inValue,dtype=float)
         if np.all(self.secondStageValues_true > -cplex.infinity):
             self.muFeasible_true = np.all((self.secondStageValues_true - self.mu_true)/self.lambda1 <  self.phiLimit)
 
@@ -172,12 +166,12 @@ class set(object):
             type = self.INTERCEPT
         else:
             raise Exception('type must be ''slope'' or ''int''')
-        self.secondStageDuals[type][inScen] = np.float64(inDual)
+        self.secondStageDuals[type][inScen] = np.array(inDual,dtype=float)
 
     def SetSecondStageSolution(self, inScen, inSol):
         if inScen < 0 or inScen > self.numScen-1:
             raise Exception('Scenario number must be between 0 and '+str(self.numScen-1))
-        self.secondStageSolutions[inScen] = np.float64(inSol)
+        self.secondStageSolutions[inScen] = np.array(inSol,dtype=float)
 
     def X(self):
         return self.solution

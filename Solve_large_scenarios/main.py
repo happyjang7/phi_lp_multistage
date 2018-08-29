@@ -1,8 +1,10 @@
 import numpy as np
-import lp_reader, PhiDivergence, PhiLP
-import time
+import lp_reader, PhiDivergence, PhiLP_root, PhiLP_child, PhiLP_leaf
+import time, copy
 import os
 import scipy.io as sio
+import pickle
+
 
 
 def run(inputPHI, alpha, matlab_input_data,matlab_input_data1,matlab_input_data2,matlab_input_data3, saveFileName, saveFigureName):
@@ -17,29 +19,34 @@ def run(inputPHI, alpha, matlab_input_data,matlab_input_data1,matlab_input_data2
     # assumption: 1,2,3 stages have the same Phi-divergence
     inPhi = PhiDivergence.set(inputPHI)
     # set: Phi-lp2
-    philp = PhiLP.set([lp.first, lp.second], inPhi, lp.first['obs'], inPhi.Rho(alpha, lp.first['obs']))
-    philp1 = [PhiLP.set([lp.second[i], lp.third[i]],
+    philp = PhiLP_root.set(lp.first, inPhi, lp.first['obs'], inPhi.Rho(alpha, lp.first['obs']))
+    philp1 = [PhiLP_child.set(lp.second[i],
                         inPhi, lp.second[i]['obs'], inPhi.Rho(alpha, lp.second[i]['obs']))
               for i in range(lp.first['numScenarios'])]
-    philp2 = [[PhiLP.set([lp.third[i][j], lp.fourth[i][j]],
+    philp2 = [[PhiLP_child.set(lp.third[i][j],
                          inPhi, lp.third[i][j]['obs'], inPhi.Rho(alpha, lp.third[i][j]['obs']))
+               for j in range(lp.second[i]['numScenarios'])]
+              for i in range(lp.first['numScenarios'])]
+    philp3 = [[[PhiLP_leaf.set(lp.fourth[i][j][k])
+                for k in range(lp.third[i][j]['numScenarios'])]
                for j in range(lp.second[i]['numScenarios'])]
               for i in range(lp.first['numScenarios'])]
 
     # InitializeBenders: Forward
-    philp.InitializeBenders(type='1-2stage', type1='Initial',x_parent=0)
+    philp.InitializeBenders(type='Initial')
     for i in range(lp.first['numScenarios']):
-        philp1[i].InitializeBenders(type1='Initial',x_parent=philp.candidateSolution.X())
+        philp1[i].InitializeBenders(x_parent=philp.candidateSolution.X())
         for j in range(lp.second[i]['numScenarios']):
-            philp2[i][j].InitializeBenders(type1='Initial',x_parent=philp1[i].candidateSolution.X())
-            philp2[i][j].SolveSubProblems()
+            philp2[i][j].InitializeBenders(x_parent=philp1[i].candidateSolution.X())
+            for k in range(lp.third[i][j]['numScenarios']):
+                philp3[i][j][k].SubProblem(x_parent=philp2[i][j].candidateSolution.X())
 
     philp.SetChildrenStage(philp1)
     # calculate true for upperbound
-    for i in range(philp.lpModel_parent['numScenarios']):
-        for j in range(philp1[i].lpModel_parent['numScenarios']):
-            for k in range(philp2[i][j].lpModel_parent['numScenarios']):
-                fval_true = philp2[i][j].candidateSolution.secondStageValues[k]
+    for i in range(philp.lpModel['numScenarios']):
+        for j in range(philp1[i].lpModel['numScenarios']):
+            for k in range(philp2[i][j].lpModel['numScenarios']):
+                fval_true = philp3[i][j][k].candidateSolution.Fval()
                 philp2[i][j].candidateSolution.SetSecondStageValue_true(k, fval_true)
             philp2[i][j].MuFeasible_for_upperbound()
             philp1[i].candidateSolution.SetSecondStageValue_true(j, philp2[i][j].Get_h_True())
@@ -59,11 +66,12 @@ def run(inputPHI, alpha, matlab_input_data,matlab_input_data1,matlab_input_data2
     #: Backward
     for i in range(lp.first['numScenarios']):
         for j in range(lp.second[i]['numScenarios']):
+            philp2[i][j].SetChildrenStage(philp3[i][j])
             philp2[i][j].GenerateCuts()
-            philp2[i][j].SolveMasterProblem(x_parent=philp1[i].candidateSolution.X())
+            philp2[i][j].SubProblem(x_parent=philp1[i].candidateSolution.X())
         philp1[i].SetChildrenStage(philp2[i])
         philp1[i].GenerateCuts()
-        philp1[i].SolveMasterProblem(x_parent=philp.candidateSolution.X())
+        philp1[i].SubProblem(x_parent=philp.candidateSolution.X())
 
     philp.SetChildrenStage(philp1)
     philp.GenerateCuts()
@@ -74,20 +82,21 @@ def run(inputPHI, alpha, matlab_input_data,matlab_input_data1,matlab_input_data2
                and philp.currentProbabilityTolerance <= philp.probabilityTolerance):
         if totalProblemsSolved >= 1000:
             break
-        # SolveMasterProblem: Forward
-        philp.SolveMasterProblem(type='1-2stage', x_parent=0)
+        # SubProblem: Forward
+        philp.SubProblem()
         for i in range(lp.first['numScenarios']):
-            philp1[i].SolveMasterProblem(x_parent=philp.candidateSolution.X())
+            philp1[i].SubProblem(x_parent=philp.candidateSolution.X())
             for j in range(lp.second[i]['numScenarios']):
-                philp2[i][j].SolveMasterProblem(x_parent=philp1[i].candidateSolution.X())
-                philp2[i][j].SolveSubProblems()
+                philp2[i][j].SubProblem(x_parent=philp1[i].candidateSolution.X())
+                for k in range(lp.third[i][j]['numScenarios']):
+                    philp3[i][j][k].SubProblem(x_parent=philp2[i][j].candidateSolution.X())
 
         philp.SetChildrenStage(philp1)
         # calculate true for upperbound
-        for i in range(philp.lpModel_parent['numScenarios']):
-            for j in range(philp1[i].lpModel_parent['numScenarios']):
-                for k in range(philp2[i][j].lpModel_parent['numScenarios']):
-                    fval_true = philp2[i][j].candidateSolution.secondStageValues[k]
+        for i in range(philp.lpModel['numScenarios']):
+            for j in range(philp1[i].lpModel['numScenarios']):
+                for k in range(philp2[i][j].lpModel['numScenarios']):
+                    fval_true = philp3[i][j][k].candidateSolution.Fval()
                     philp2[i][j].candidateSolution.SetSecondStageValue_true(k, fval_true)
                 philp2[i][j].MuFeasible_for_upperbound()
                 philp1[i].candidateSolution.SetSecondStageValue_true(j, philp2[i][j].Get_h_True())
@@ -110,11 +119,12 @@ def run(inputPHI, alpha, matlab_input_data,matlab_input_data1,matlab_input_data2
         #: Backward
         for i in range(lp.first['numScenarios']):
             for j in range(lp.second[i]['numScenarios']):
+                philp2[i][j].SetChildrenStage(philp3[i][j])
                 philp2[i][j].GenerateCuts()
-                philp2[i][j].SolveMasterProblem(x_parent=philp1[i].candidateSolution.X())
+                philp2[i][j].SubProblem(x_parent=philp1[i].candidateSolution.X())
             philp1[i].SetChildrenStage(philp2[i])
             philp1[i].GenerateCuts()
-            philp1[i].SolveMasterProblem(x_parent=philp.candidateSolution.X())
+            philp1[i].SubProblem(x_parent=philp.candidateSolution.X())
 
         philp.SetChildrenStage(philp1)
         philp.GenerateCuts()
@@ -122,7 +132,9 @@ def run(inputPHI, alpha, matlab_input_data,matlab_input_data1,matlab_input_data2
 
 
     timeRuns = time.clock() - start
-
+    # output one item
+    with open('results.pkl', 'wb') as f:
+        pickle.dump([philp, philp1, philp2, philp3], f)
     import matplotlib.pyplot as plt
 
     x = np.arange(1, np.size(upper) + 1, dtype=int)
