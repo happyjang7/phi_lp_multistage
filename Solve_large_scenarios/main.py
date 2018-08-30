@@ -1,5 +1,5 @@
 import numpy as np
-import lp_reader, PhiDivergence, PhiLP,PhiLP_root, PhiLP_child, PhiLP_leaf
+import lp_reader, PhiDivergence,PhiLP_root, PhiLP_child, PhiLP_leaf
 import time, copy
 import os
 import scipy.io as sio
@@ -19,7 +19,7 @@ def run(inputPHI, alpha, matlab_input_data,matlab_input_data1,matlab_input_data2
     # assumption: 1,2,3 stages have the same Phi-divergence
     inPhi = PhiDivergence.set(inputPHI)
     # set: Phi-lp2
-    philp = PhiLP.set(lp.first, inPhi, lp.first['obs'], inPhi.Rho(alpha, lp.first['obs']))
+    philp = PhiLP_root.set(lp.first, inPhi, lp.first['obs'], inPhi.Rho(alpha, lp.first['obs']))
     philp1 = [PhiLP_child.set(lp.second[i],
                         inPhi, lp.second[i]['obs'], inPhi.Rho(alpha, lp.second[i]['obs']))
               for i in range(lp.first['numScenarios'])]
