@@ -1,0 +1,17 @@
+Phi = burg
+alpha = 0.1
+
+Current Objective Tolerance = -0.0007851703610864635
+Current Probability Tolerance = 141.84205356670543
+Iteratoins = 91
+Time (seconds) = 87.4231597339557
+
+ObjectiveValue = 41590.84237116207
+Lower Bound = 41623.498267884526
+Upper Bound = 41590.84237116207
+
+X = [96.75493117  0.        ]
+Mu = 0.0
+Lambda = 1e-06
+pWorst = [[1.42842054e+02 1.25754328e-10 3.52120269e-11 6.77040579e-11
+  1.05414659e-10 1.06498617e-10 5.36399755e-11]]

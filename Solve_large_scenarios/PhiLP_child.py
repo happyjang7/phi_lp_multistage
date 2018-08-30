@@ -57,7 +57,7 @@ class set(object):
 
         self.candidateSolution = Solution.set(self.lpModel, self.phi, self.numObsPerScen, self.lambdaLowerBound, inCutType='multi')
 
-    def InitializeBenders(self, x_parent):
+    # InitializeBenders:
         self.objectiveCutsMatrix = np.array([], dtype=np.float64).reshape(0, self.lpModel['obj'].size + 2 + self.THETA.size)
         self.objectiveCutsRHS = np.array([])
         for i in range(self.THETA.size):
@@ -70,14 +70,6 @@ class set(object):
         self.feasibilityCutsMatrix = np.array([], dtype=np.float64).reshape(0, self.lpModel['obj'].size + 2 + self.THETA.size)
         self.feasibilityCutsRHS = np.array([])
 
-
-        exitFlag = self.SubProblem(x_parent)
-        if exitFlag != 1:
-            raise Exception('Could not solve first stage LP')
-
-        self.candidateSolution.SetLambda(np.float64(10**15))
-        self.candidateSolution.SetMu(np.float64(10**15))
-        self.candidateSolution.SetMu_true(np.float64(10**15))
 
 
     def SubProblem(self, x_parent):

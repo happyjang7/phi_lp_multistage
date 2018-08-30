@@ -34,6 +34,9 @@ class set(object):
         self.objectiveScale = np.float64(1)
         self.lambdaLowerBound = np.float64(1e-6)
 
+        self.currentObjectiveTolerance = np.inf
+        self.currentProbabilityTolerance = np.float64(1)
+
         self.lpModel = inLPModel
         self.phi = inPhi
         self.numObsPerScen = np.array(inNumObsPerScen)
@@ -59,6 +62,9 @@ class set(object):
         self.objectiveTolerance = np.float64(1e-6)
         self.probabilityTolerance = np.float64(5e-3)
 
+        self.currentObjectiveTolerance = np.inf
+        self.currentProbabilityTolerance = np.float64(1)
+
         self.LAMBDA = self.lpModel['obj'].size
         self.MU = self.LAMBDA + 1
 
@@ -75,7 +81,12 @@ class set(object):
 
         self.candidateSolution = Solution.set(self.lpModel, self.phi, self.numObsPerScen, self.lambdaLowerBound, inCutType='multi')
 
-    def InitializeBenders(self, type='stages', type1='Initial', x_parent=0):
+        self.zLower = -np.inf
+        self.zUpper = np.inf
+        self.bestSolution = np.array([])
+        self.secondBestSolution = np.array([])
+
+    # InitializeBenders:
         self.objectiveCutsMatrix = np.array([], dtype=np.float64).reshape(0, self.lpModel['obj'].size + 2 + self.THETA.size)
         self.objectiveCutsRHS = np.array([])
         for i in range(self.THETA.size):
@@ -88,18 +99,8 @@ class set(object):
         self.feasibilityCutsMatrix = np.array([], dtype=np.float64).reshape(0, self.lpModel['obj'].size + 2 + self.THETA.size)
         self.feasibilityCutsRHS = np.array([])
 
-        if type == '1-2stage':
-            self.zLower = -np.inf
-            self.zUpper = np.inf
-            self.bestSolution = np.array([])
-            self.secondBestSolution = np.array([])
 
-        exitFlag = self.SolveMasterProblem(type, type1, x_parent)
-        if exitFlag != 1:
-            raise Exception('Could not solve first stage LP')
-
-
-    def SolveMasterProblem(self, type='stages',type1='non_Initial', x_parent=0):
+    def SubProblem(self):
         self.ResetSecondStageSolutions()
         cMaster = self.GetMasterc()
         AMaster = self.GetMasterA()
@@ -107,9 +108,6 @@ class set(object):
         lMaster = self.GetMasterl()
         uMaster = self.GetMasteru()
         senseMaster = self.GetMastersense()
-        BMaster = 0
-        if not type == '1-2stage':
-            BMaster = self.GetMasterB()
         CutMatrix = np.vstack((self.objectiveCutsMatrix, self.feasibilityCutsMatrix))
         rows, cols = CutMatrix.nonzero()
         idx = list(zip(rows, cols))
@@ -120,35 +118,27 @@ class set(object):
 
 
         try:
-            mdl_master = cplex.Cplex()
-            mdl_master.parameters.lpmethod.set(mdl_master.parameters.lpmethod.values.auto)
-            mdl_master.variables.add(obj=cMaster, lb=lMaster, ub=uMaster)
-            mdl_master.linear_constraints.add(senses=senseMaster + CutSense,
-                                              rhs=np.hstack((bMaster + BMaster * x_parent, CutMatrixRHS)))
-            mdl_master.linear_constraints.set_coefficients(list(AMaster) + CutMatrix_coefficients)
-            mdl_master.set_results_stream(None)
-            mdl_master.solve()
+            mdl_sub = cplex.Cplex()
+            mdl_sub.parameters.lpmethod.set(mdl_sub.parameters.lpmethod.values.auto)
+            mdl_sub.variables.add(obj=cMaster, lb=lMaster, ub=uMaster)
+            mdl_sub.linear_constraints.add(senses=senseMaster + CutSense,
+                                              rhs=np.hstack((bMaster, CutMatrixRHS)))
+            mdl_sub.linear_constraints.set_coefficients(list(AMaster) + CutMatrix_coefficients)
+            mdl_sub.set_results_stream(None)
+            mdl_sub.solve()
 
-            solution = mdl_master.solution
+            solution = mdl_sub.solution
             exitFlag = solution.get_status()
 
             currentCandidate = np.array(solution.get_values())
             fval = np.float64(solution.get_objective_value())
             pi = np.array(solution.get_dual_values())
 
-
-
-            if exitFlag == mdl_master.solution.status.unbounded:
-                print(type, type1)
-                print(mdl_master.solution.status[exitFlag])
+            if exitFlag == mdl_sub.solution.status.unbounded:
                 raise Exception("Model is unbounded")
-            if exitFlag == mdl_master.solution.status.infeasible:
-                print(type, type1)
-                print(mdl_master.solution.status[exitFlag])
+            if exitFlag == mdl_sub.solution.status.infeasible:
                 raise Exception("Model is infeasible")
-            if exitFlag == mdl_master.solution.status.infeasible_or_unbounded:
-                print(type, type1)
-                print(mdl_master.solution.status[exitFlag])
+            if exitFlag == mdl_sub.solution.status.infeasible_or_unbounded:
                 raise Exception("Model is infeasible or unbounded")
 
 
@@ -163,22 +153,11 @@ class set(object):
         self.candidateSolution.SetFval(fval)
         self.candidateSolution.SetPi(pi)
 
-        if type1=='Initial':
-            self.candidateSolution.SetLambda(np.float64(10**15))
-            self.candidateSolution.SetMu(np.float64(10**15))
-            self.candidateSolution.SetMu_true(np.float64(10**15))
-
-        if type == '1-2stage' and type1 !='Initial':
-            currentBest = self.GetDecisions(self.bestSolution)
-            if exitFlag != 1 or np.matmul(cMaster, currentBest-currentCandidate) < -1e-4*np.matmul(cMaster,currentBest):
-                if exitFlag == 1:
-                    print('Current Best solution value:', str(np.matmul(cMaster / self.objectiveScale, currentBest)),
-                          ', Candidate solution value:', str(np.matmul(cMaster / self.objectiveScale, currentCandidate)))
-                    exitFlag = -50
-                return exitFlag
-            if not (exitFlag != 1 or np.matmul(cMaster, currentBest-currentCandidate) >= -1e-4*np.matmul(cMaster,currentBest)):
-                raise Exception('Actual objective drop = ' + str(np.matmul(cMaster, (currentBest - currentCandidate))))
         return exitFlag
+
+    def muFeasibleLower(self, child_philp):
+        secondStageValues = [child_philp[i].candidateSolution.Fval() for i in range(self.lpModel['numScenarios'])]
+        self.muFeasible = np.all((secondStageValues - self.candidateSolution.Mu()) / self.candidateSolution.Lambda() < self.candidateSolution.phiLimit)
 
     def SetChildrenStage(self, child_philp):
         self.candidateSolution.ResetSecondStages()
@@ -197,7 +176,6 @@ class set(object):
             self.candidateSolution.SetSecondStageDual(scenarioNum, fval - np.matmul(pi[:bMaster.size]*BMaster, xLocal), 'int')
 
 
-    
 
     def GenerateCuts(self):
         if ~self.candidateSolution.MuFeasible():
