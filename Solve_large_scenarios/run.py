@@ -1,12 +1,12 @@
 import main
 
-for i in range(10,11):
+for i in range(2,3):
     data = "first_second_third_news"+str(i)+".mat"
     data1 = "fourth1_news"+str(i)+".mat"
     data2 = "fourth2_news"+str(i)+".mat"
     data3 = "fourth3_news"+str(i)+".mat"
     phi = 'burg'
-    main.run(phi,  0.1, data,data1,data2,data3, './result/result'+str(i)+'.txt', './result/result.png')
+    main.run(phi,  0.1, data,data1,data2,data3, './result/result'+str(i)+'.txt','./result/result'+str(i)+'.pkl', './result/result.png')
 
 
 # data = "first_second_third_1.mat"

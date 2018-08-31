@@ -7,7 +7,7 @@ import pickle
 
 
 
-def run(inputPHI, alpha, matlab_input_data,matlab_input_data1,matlab_input_data2,matlab_input_data3, saveFileName, saveFigureName):
+def run(inputPHI, alpha, matlab_input_data,matlab_input_data1,matlab_input_data2,matlab_input_data3, saveFileName,saveFileName2, saveFigureName):
     # read data from Matlab .mat file
     mat_data = sio.loadmat(os.getcwd() + "/mat_data/" + matlab_input_data)
     fourth1 = sio.loadmat(os.getcwd() + "/mat_data/"+ matlab_input_data1)
@@ -91,7 +91,7 @@ def run(inputPHI, alpha, matlab_input_data,matlab_input_data1,matlab_input_data2
 
     timeRuns = time.clock() - start
     # output one item
-    with open('results.pkl', 'wb') as f:
+    with open(saveFileName2, 'wb') as f:
         pickle.dump([philp, philp1, philp2, philp3], f)
     import matplotlib.pyplot as plt
 

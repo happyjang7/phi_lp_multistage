@@ -1,6 +1,6 @@
 import pickle
+import numpy as np
 
-with open('results.pkl', 'rb') as f:
+with open('result2.pkl', 'rb') as f:
     data = pickle.load(f)
-print(data[1][0].pWorst)
-
+print(data[1][0].candidateSolution.X())

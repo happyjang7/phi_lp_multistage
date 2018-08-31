@@ -50,8 +50,8 @@ class set(object):
         self.secondStageValues = -cplex.infinity*np.ones(self.numScen)
         self.secondStageDuals = [[np.array([]) for _ in range(self.numScen)], [np.array([]) for _ in range(self.numScen)]]
         self.secondStageSolutions = [np.array([]) for _ in range(self.numScen)]
-        # self.secondStageValues_true = np.zeros(self.numScen)
         self.secondStageValues_true = -cplex.infinity * np.ones(self.numScen)
+
 
         self.muFeasible = False
         self.muFeasible_true = False
@@ -61,7 +61,6 @@ class set(object):
         self.secondStageDuals = [[np.array([]) for _ in range(self.numScen)],
                                  [np.array([]) for _ in range(self.numScen)]]
         self.secondStageSolutions = [np.array([]) for _ in range(self.numScen)]
-        # self.secondStageValues_true = np.zeros(self.numScen)
         self.secondStageValues_true = -cplex.infinity * np.ones(self.numScen)
 
 
@@ -135,15 +134,6 @@ class set(object):
             outS[relDiff > tol] = cplex.infinity
             return outS
 
-    ## For lower bound: Start
-    def SetSecondStageValue(self, inScen, inValue):
-        if inScen < 0 or inScen > self.numScen - 1:
-            raise Exception('Scenario number must be between 0 and ' + str(self.numScen - 1))
-        self.secondStageValues[inScen] = np.array(inValue, dtype=float)
-
-        if np.all(self.secondStageValues > -cplex.infinity):
-            self.muFeasible = np.all((self.secondStageValues - self.mu) / self.lambda1 < self.phiLimit)
-
     ## For upper bound: Start
     def SetSecondStageValue_true(self, inScen, inValue):
         if inScen < 0 or inScen > self.numScen - 1:
@@ -152,15 +142,15 @@ class set(object):
         if np.all(self.secondStageValues_true > -cplex.infinity):
             self.muFeasible_true = np.all((self.secondStageValues_true - self.mu_true)/self.lambda1 <  self.phiLimit)
 
-    def S_True(self,secondStageValues_selected):
+    def S_True(self,selected_child):
         if self.lambda1 > 0:
-            if self.phiLimit==1 and (np.amax(secondStageValues_selected) - self.mu_true) / self.lambda1 > self.phiLimit:
-                tmp_S2 = (secondStageValues_selected -np.amax(secondStageValues_selected)+ self.phiLimit * np.float64(1 - 1e-3) * self.lambda1) / self.lambda1
+            if self.phiLimit==1 and (np.amax(selected_child) - self.mu_true) / self.lambda1 > self.phiLimit:
+                tmp_S2 = (selected_child -np.amax(selected_child)+ self.phiLimit * np.float64(1 - 1e-3) * self.lambda1) / self.lambda1
                 return tmp_S2
-            return (secondStageValues_selected - self.mu_true) / self.lambda1
+            return (selected_child - self.mu_true) / self.lambda1
         else:
-            relDiff = (secondStageValues_selected - self.mu_true) / np.abs(self.mu_true)
-            outS = np.zeros_like(secondStageValues_selected,dtype=float)
+            relDiff = (selected_child - self.mu_true) / np.abs(self.mu_true)
+            outS = np.zeros_like(selected_child,dtype=float)
             tol = np.float64(1e-6)
             outS[relDiff < -tol] = -cplex.infinity
             outS[relDiff >  tol] = cplex.infinity

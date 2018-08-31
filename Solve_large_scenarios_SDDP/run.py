@@ -6,7 +6,11 @@ for i in range(10,11):
     data2 = "fourth2_news"+str(i)+".mat"
     data3 = "fourth3_news"+str(i)+".mat"
     phi = 'burg'
-    main.run(10, phi,  0.1, data,data1,data2,data3, './result/result'+str(i)+'.txt', './result/result.png')
+    # main.run(100, phi, 0.1, data, data1, data2, data3, './result/result' + str(i) + '_100.txt', './result/result.png')
+    # main.run(200, phi,  0.1, data,data1,data2,data3, './result/result'+str(i)+'_200.txt', './result/result.png')
+    # main.run(300, phi, 0.1, data, data1, data2, data3, './result/result' + str(i) + '_300.txt', './result/result.png')
+    # main.run(400, phi, 0.1, data, data1, data2, data3, './result/result' + str(i) + '_400.txt', './result/result.png')
+    main.run(200, phi, 0.1, data, data1, data2, data3, './result/result' + str(i) + '_500.txt', './result/result.png')
 
 #
 # data = "first_second_third_1.mat"

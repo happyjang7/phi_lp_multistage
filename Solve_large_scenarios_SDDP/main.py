@@ -1,6 +1,6 @@
 import numpy as np
 import lp_reader, PhiDivergence, PhiLP_root, PhiLP_child, PhiLP_leaf
-import time, copy
+import time
 import os
 import scipy.io as sio
 import pickle
@@ -9,10 +9,10 @@ import pickle
 
 def run(numScen, inputPHI, alpha, matlab_input_data,matlab_input_data1,matlab_input_data2,matlab_input_data3, saveFileName, saveFigureName):
     # read data from Matlab .mat file
-    mat_data = sio.loadmat(os.getcwd() + "/mat_data/" + matlab_input_data)
-    fourth1 = sio.loadmat(os.getcwd() + "/mat_data/"+ matlab_input_data1)
-    fourth2 = sio.loadmat(os.getcwd() + "/mat_data/"+ matlab_input_data2)
-    fourth3 = sio.loadmat(os.getcwd() + "/mat_data/"+ matlab_input_data3)
+    mat_data = sio.loadmat(os.getcwd() + "\\mat_data\\" + matlab_input_data)
+    fourth1 = sio.loadmat(os.getcwd() + "\\mat_data\\"+ matlab_input_data1)
+    fourth2 = sio.loadmat(os.getcwd() + "\\mat_data\\"+ matlab_input_data2)
+    fourth3 = sio.loadmat(os.getcwd() + "\\mat_data\\"+ matlab_input_data3)
     # set lp data
     lp = lp_reader.set(mat_data,fourth1,fourth2,fourth3)
     start = time.clock()
@@ -41,7 +41,7 @@ def run(numScen, inputPHI, alpha, matlab_input_data,matlab_input_data1,matlab_in
     # while not (philp.currentObjectiveTolerance <= philp.objectiveTolerance
     #            and philp.currentProbabilityTolerance <= philp.probabilityTolerance):
     while not philp.currentObjectiveTolerance <= philp.objectiveTolerance:
-        if totalProblemsSolved >= 1000:
+        if totalProblemsSolved >= 50:
             break
         # SubProblem: Forward
 
@@ -66,31 +66,22 @@ def run(numScen, inputPHI, alpha, matlab_input_data,matlab_input_data1,matlab_in
         for k in range(np.size(kId, 0)):
             philp3[kId[k][0]][kId[k][1]][kId[k][2]].SubProblem(x_parent=philp2[kId[k][0]][kId[k][1]].candidateSolution.X())
 
-        secondStageValues_selected = [philp1[i].candidateSolution.Fval() for i in iId]
-        philp.muFeasible_selected(secondStageValues_selected)
+        philp.selected_child = [philp1[i].candidateSolution.Fval() for i in iId]
+        philp.muFeasible_selected()
 
         # calculate true for upperbound
         for j in range(np.size(jId, 0)):
-            secondStageValues_selected = np.array([np.asscalar(philp3[jId[j][0]][jId[j][1]][kId[k][2]].candidateSolution.Fval())
-                                          for k in range(np.size(kId, 0)) if
-                                          jId[j][0] == kId[k][0] and jId[j][1] == kId[k][1]])
-            philp2[jId[j][0]][jId[j][1]].secondStageValues_selected = secondStageValues_selected
-            philp2[jId[j][0]][jId[j][1]].muFeasible_selected_true(secondStageValues_selected)
-            philp2[jId[j][0]][jId[j][1]].MuFeasible_for_upperbound(secondStageValues_selected)
+            philp2[jId[j][0]][jId[j][1]].selected_child = np.array([np.asscalar(philp3[kId[k][0]][kId[k][1]][kId[k][2]].candidateSolution.Fval())
+                                                                    for k in range(np.size(kId, 0)) if np.array_equal(kId[k][0:2], jId[j])])
+            philp2[jId[j][0]][jId[j][1]].muFeasible_selected_true()
 
         for i in range(np.size(iId, 0)):
-            secondStageValues_selected = np.array([np.asscalar(philp2[iId[i]][jId[j][1]].Get_h_True())
-                                          for j in range(np.size(jId, 0)) if
-                                          iId[i] == jId[j][0]])
-            philp1[iId[i]].secondStageValues_selected = secondStageValues_selected
-            philp1[iId[i]].muFeasible_selected_true(secondStageValues_selected)
-            philp1[iId[i]].MuFeasible_for_upperbound(secondStageValues_selected)
+            philp1[iId[i]].selected_child = np.array([np.asscalar(philp2[jId[j][0]][jId[j][1]].Get_h_True())
+                                          for j in range(np.size(jId, 0)) if np.array_equal(jId[j][0],iId[i])])
+            philp1[iId[i]].muFeasible_selected_true()
 
-
-        secondStageValues_selected = np.array([np.asscalar(philp1[iId[i]].Get_h_True()) for i in range(np.size(iId, 0))])
-        philp.secondStageValues_selected = secondStageValues_selected
-        philp.muFeasible_selected_true(secondStageValues_selected)
-        philp.MuFeasible_for_upperbound(secondStageValues_selected)
+        philp.selected_child = np.array([np.asscalar(philp1[iId[i]].Get_h_True()) for i in range(np.size(iId, 0))])
+        philp.muFeasible_selected_true()
 
         philp.UpdateSolutions()
         philp.UpdateTolerances()
@@ -104,23 +95,30 @@ def run(numScen, inputPHI, alpha, matlab_input_data,matlab_input_data1,matlab_in
         upper = np.append(upper, philp.zUpper / philp.objectiveScale)
         lower = np.append(lower, philp.zLower / philp.objectiveScale)
 
+
         #: Backward
         for j in range(np.size(jId, 0)):
             for k in range(lp.third[jId[j][0]][jId[j][1]]['numScenarios']):
                 philp3[jId[j][0]][jId[j][1]][k].SubProblem(x_parent=philp2[jId[j][0]][jId[j][1]].candidateSolution.X())
             philp2[jId[j][0]][jId[j][1]].SetChildrenStage(philp3[jId[j][0]][jId[j][1]])
             philp2[jId[j][0]][jId[j][1]].GenerateCuts()
+            philp2[jId[j][0]][jId[j][1]].SubProblem(x_parent=philp1[jId[j][0]].candidateSolution.X())
 
         for i in range(np.size(iId, 0)):
             for j in range(lp.second[iId[i]]['numScenarios']):
                 philp2[iId[i]][j].SubProblem(x_parent=philp1[iId[i]].candidateSolution.X())
             philp1[iId[i]].SetChildrenStage(philp2[iId[i]])
             philp1[iId[i]].GenerateCuts()
+            philp1[iId[i]].SubProblem(x_parent=philp.candidateSolution.X())
 
         for i in range(lp.first['numScenarios']):
             philp1[i].SubProblem(x_parent=philp.candidateSolution.X())
         philp.SetChildrenStage(philp1)
         philp.GenerateCuts()
+
+
+
+
     timeRuns = time.clock() - start
     # output one item
     with open('results.pkl', 'wb') as f:

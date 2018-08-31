@@ -171,11 +171,9 @@ class set(object):
             self.candidateSolution.SetSecondStageDual(scenarioNum, pi[:bMaster.size]*BMaster, 'slope')
             self.candidateSolution.SetSecondStageDual(scenarioNum, fval - np.matmul(pi[:bMaster.size]*BMaster, xLocal), 'int')
 
-    def muFeasible_selected(self, secondStageValues_selected):
-        self.muFeasible = np.all((secondStageValues_selected - self.candidateSolution.Mu()) / self.candidateSolution.Lambda() < self.candidateSolution.phiLimit)
+    def muFeasible_selected(self):
+        self.muFeasible = np.all((self.selected_child - self.candidateSolution.Mu()) / self.candidateSolution.Lambda() < self.candidateSolution.phiLimit)
 
-    def muFeasible_selected_true(self, secondStageValues_selected):
-        self.muFeasible_true = np.all((secondStageValues_selected - self.candidateSolution.Mu()) / self.candidateSolution.Lambda() < self.candidateSolution.phiLimit)
 
 
     def GenerateCuts(self):
@@ -238,17 +236,21 @@ class set(object):
 
 
     # needed for upper bound
-    def FindFeasibleMu_true(self,secondStageValues_selected):
+    def muFeasible_selected_true(self):
+        self.muFeasible_true = np.all((self.selected_child - self.candidateSolution.Mu_true()) / self.candidateSolution.Lambda() < self.candidateSolution.phiLimit)
+        if ~self.candidateSolution.MuFeasibleTrue():
+            self.FindFeasibleMu_true()
+    def FindFeasibleMu_true(self):
         lambdaLocal = self.candidateSolution.Lambda()
         limit = np.minimum(self.phi.limit(), self.phi.computationLimit)
-        localValues = secondStageValues_selected
+        localValues = self.selected_child
         mu = np.float64(np.max(localValues) - limit * np.float64(1 - 1e-3) * lambdaLocal)
         self.candidateSolution.SetMu_true(mu)
 
     # needed for upper bound
-    def MuFeasible_for_upperbound(self,secondStageValues_selected):
+    def MuFeasible_for_upperbound(self):
         if ~self.candidateSolution.MuFeasibleTrue():
-            self.FindFeasibleMu_true(secondStageValues_selected)
+            self.FindFeasibleMu_true()
 
     def FindExpectedSecondStage(self):
         inSolution = self.candidateSolution
@@ -282,11 +284,12 @@ class set(object):
         muLocal = inSolution.Mu_true()
         lambdaLocal = inSolution.Lambda()
         rhoLocal = self.rho
-        SLocal = inSolution.S_True(self.secondStageValues_selected)
+        SLocal = inSolution.S_True(self.selected_child)
         # q = self.numObsPerScen / self.numObsTotal
         q = np.ones((1,SLocal.size))/np.float64(SLocal.size)
         h_True = np.matmul(cLocal, xLocal) \
                  + np.matmul(q,(muLocal + rhoLocal*lambdaLocal + lambdaLocal*self.phi.Conjugate(SLocal)))
+        print(muLocal, lambdaLocal, SLocal, self.phi.Conjugate(SLocal))
         return h_True
 
 
@@ -300,7 +303,7 @@ class set(object):
     def UpdateSolutions(self):
         upper_candidate = np.asscalar(self.Get_h_True())
         lower_candidate = self.candidateSolution.fval
-
+        print("here",upper_candidate,self.zUpper)
         if upper_candidate < self.zUpper:
             self.newSolutionAccepted = True
             self.UpdateBestSolution()
@@ -341,7 +344,7 @@ class set(object):
 
     def CalculateProbability(self):
         # q = self.numObsPerScen / self.numObsTotal
-        s = self.bestSolution.S_True(self.secondStageValues_selected)
+        s = self.bestSolution.S_True(self.selected_child)
         q = np.ones((1,s.size))/np.float64(s.size)
         self.pWorst = np.multiply(q, self.phi.ConjugateDerivative(s))
         self.pWorst[np.where(q == 0)[0]] = 0
@@ -350,6 +353,7 @@ class set(object):
             self.pWorst[limitCases] = (1 - np.sum(self.pWorst[np.logical_not(limitCases)])) / np.count_nonzero( limitCases)
             # self.pWorst[limitCases] = (2 * q[limitCases] + self.rho - np.sqrt((2 * q[limitCases] * self.rho) ** 2 - 4 * q[limitCases] ** 2)) / 2
         self.calculatedDivergence = np.sum(self.phi.Contribution(self.pWorst, q))
+
 
     def UpdateTolerances(self):
         if self.zLower > -np.inf:

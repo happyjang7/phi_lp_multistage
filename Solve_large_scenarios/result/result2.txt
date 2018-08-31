@@ -4,7 +4,7 @@ alpha = 0.1
 Current Objective Tolerance = 4.346867093579424e-08
 Current Probability Tolerance = 0.0043716262656657845
 Iteratoins = 27
-Time (seconds) = 3.026411386468502
+Time (seconds) = 2.4677700788595214
 
 ObjectiveValue = 40134.351515529226
 Lower Bound = 40134.34977094238
