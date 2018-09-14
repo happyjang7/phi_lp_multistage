@@ -121,7 +121,8 @@ class set(object):
 
     def S(self):
         if self.lambda1 >  0:
-            if self.phiLimit==1 and (np.amax(self.secondStageValues) - self.mu) / self.lambda1 >self.phiLimit :
+            if (np.amax(self.secondStageValues) - self.mu) / self.lambda1 >self.phiLimit :
+            # if self.phiLimit == 1 and (np.amax(self.secondStageValues) - self.mu) / self.lambda1 > self.phiLimit:
                 tmp_S2 = (self.secondStageValues -np.amax(self.secondStageValues)+ self.phiLimit * np.float64(1 - 1e-3) * self.lambda1) / self.lambda1
                 return tmp_S2
             return (self.secondStageValues - self.mu) / self.lambda1
@@ -143,7 +144,8 @@ class set(object):
 
     def S_True(self):
         if self.lambda1 > 0:
-            if self.phiLimit==1 and (np.amax(self.secondStageValues_true) - self.mu_true) / self.lambda1 > self.phiLimit:
+            if (np.amax(self.secondStageValues_true) - self.mu_true) / self.lambda1 > self.phiLimit:
+            # if self.phiLimit==1 and (np.amax(self.secondStageValues_true) - self.mu_true) / self.lambda1 > self.phiLimit:
                 tmp_S2 = (self.secondStageValues_true -np.amax(self.secondStageValues_true)+ self.phiLimit * np.float64(1 - 1e-3) * self.lambda1) / self.lambda1
                 return tmp_S2
             return (self.secondStageValues_true - self.mu_true) / self.lambda1

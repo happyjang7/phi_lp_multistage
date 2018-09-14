@@ -126,4 +126,5 @@ def run(inputPHI, alpha, matlab_input_data,matlab_input_data1,matlab_input_data2
 
 
 if __name__ == "__main__":
-    run('burg', 0.1, "new10.mat", './result/test1.txt', './result/test1.png')
+    run('hellinger', 0.05, 'water2_0.mat', 'water2_1.mat', 'water2_2.mat', 'water2_3.mat', './result/water_decomp.txt',
+             './result/water_decomp.pkl', './result/water_decomp.png')

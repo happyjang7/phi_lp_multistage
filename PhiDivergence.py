@@ -107,12 +107,11 @@ class set(object):
             def function_t(t, data):
                 return self.func(t)-data
             data = inRho/np.min(distr[distr>0])
-            t = fsolve(function_t , 2, args=data)
+            t = fsolve(function_t , 10, args=data)
 
             def function_s(s,data):
                 return self.conjugateDerivative(s)-data
-            data1 = t
-            s = fsolve(function_s, 1, args=data1)
+            s = fsolve(function_s, 10, args=t)
             self.computationLimit = s
 
     def Rho(self, alpha, obs):
