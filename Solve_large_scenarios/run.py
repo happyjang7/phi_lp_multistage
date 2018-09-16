@@ -1,56 +1,10 @@
 import main
 
-# for i in range(2,3):
-#     data = "first_second_third_news"+str(i)+".mat"
-#     data1 = "fourth1_news"+str(i)+".mat"
-#     data2 = "fourth2_news"+str(i)+".mat"
-#     data3 = "fourth3_news"+str(i)+".mat"
-#     phi = 'burg'
-#     main.run(phi,  0.1, data,data1,data2,data3, './result/result'+str(i)+'.txt','./result/result'+str(i)+'.pkl', './result/result.png')
-#
-
-data = "first_second_third_1.mat"
-data1 = "fourth1_1.mat"
-data2 = "fourth2_1.mat"
-data3 = "fourth3_1.mat"
-phi = 'kl'
-
-main.run(phi,  0.1, data,data1,data2,data3, './result/' +data + "_" + phi + "_" + 'result1.txt', './result/' +data + "_" + phi + "_" + 'result1.pkl','./result/'  +data + "_" + phi + "_" + 'result1.png')
-main.run(phi,  0.05, data,data1,data2,data3, './result/' +data + "_" + phi + "_" + 'result2.txt',  './result/' +data + "_" + phi + "_" + 'result2.pkl', './result/'  +data + "_" + phi + "_" + 'result2.png')
-main.run(phi,  0.01, data,data1,data2,data3, './result/' +data + "_" + phi + "_" + 'result3.txt', './result/' +data + "_" + phi + "_" + 'result3.pkl', './result/'  +data + "_" + phi + "_" + 'result3.png')
-#
-#
-#
-# data = "WWTP_first_second_third.mat"
-# data1 = "WWTP_fourth1.mat"
-# data2 = "WWTP_fourth2.mat"
-# data3 = "WWTP_fourth3.mat"
-# phi = 'burg'
-#
-# main.run(phi,  0.1, data,data1,data2,data3, './result/' +data + "_" + phi + "_" + 'result1.txt', './result/'  +data + "_" + phi + "_" + 'result1.png')
-# main.run(phi,  0.05, data,data1,data2,data3, './result/' +data + "_" + phi + "_" + 'result2.txt', './result/'  +data + "_" + phi + "_" + 'result2.png')
-# main.run(phi,  0.01, data,data1,data2,data3, './result/' +data + "_" + phi + "_" + 'result3.txt', './result/'  +data + "_" + phi + "_" + 'result3.png')
-#
-#
-# data = "IPR_first_second_third.mat"
-# data1 = "IPR_fourth1.mat"
-# data2 = "IPR_fourth2.mat"
-# data3 = "IPR_fourth3.mat"
-# phi = 'burg'
-#
-# main.run(phi,  0.1, data,data1,data2,data3, './result/' +data + "_" + phi + "_" + 'result1.txt', './result/'  +data + "_" + phi + "_" + 'result1.png')
-# main.run(phi,  0.05, data,data1,data2,data3, './result/' +data + "_" + phi + "_" + 'result2.txt', './result/'  +data + "_" + phi + "_" + 'result2.png')
-# main.run(phi,  0.01, data,data1,data2,data3, './result/' +data + "_" + phi + "_" + 'result3.txt', './result/'  +data + "_" + phi + "_" + 'result3.png')
-
-
-
-# #
-# phi = 'kl'
-# main.run(phi,  0.1, data,data1,data2,data3, './result/' +data + "_" + phi + "_" + 'result1.txt', './result/'  +data + "_" + phi + "_" + 'result1.png')
-# main.run(phi,  0.05, data,data1,data2,data3, './result/' +data + "_" + phi + "_" + 'result2.txt', './result/'  +data + "_" + phi + "_" + 'result2.png')
-# main.run(phi,  0.01, data,data1,data2,data3, './result/' +data + "_" + phi + "_" + 'result3.txt', './result/'  +data + "_" + phi + "_" + 'result3.png')
-#
-# phi = 'mchi2'
-# main.run(phi,  0.1, data,data1,data2,data3, './result/' +data + "_" + phi + "_" + 'result1.txt', './result/'  +data + "_" + phi + "_" + 'result1.png')
-# main.run(phi,  0.05, data,data1,data2,data3, './result/' +data + "_" + phi + "_" + 'result2.txt', './result/'  +data + "_" + phi + "_" + 'result2.png')
-# main.run(phi,  0.01, data,data1,data2,data3, './result/' +data + "_" + phi + "_" + 'result3.txt', './result/'  +data + "_" + phi + "_" + 'result3.png')
+for n in [2, 8, 24, 40, 56, 72, 88, 104, 120, 136, 152, 168, 184, 200, 216, 232, 248, 264, 280, 296, 312, 328, 344, 360,
+          376]:
+    main.run('hellinger', 0.05, 'water' + str(n) + '_0.mat', 'water' + str(n) + '_1.mat', 'water' + str(n) + '_2.mat',
+        'water' + str(n) + '_3.mat', './result/hellinger_water' + str(n) + '_decomp.txt',
+        './result/water.pkl', './result/water.png')
+main.run('hellinger', 0.05, 'NI_first_second_third.mat', 'NI_fourth1.mat', 'NI_fourth2.mat', 'NI_fourth3.mat',
+    './result/hellinger_water' + str(384) + '_decomp.txt',
+    './result/water.pkl', './result/water.png')
